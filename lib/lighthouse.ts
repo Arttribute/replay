@@ -59,8 +59,8 @@ export const uploadFile = async (
     const response = await lighthouse.upload(
       file,
       apiKey,
-      false, // Not multiple files
-      onProgress || undefined
+      1 // Single file
+      //onProgress || undefined
     );
     return response;
   } catch (error) {

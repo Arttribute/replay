@@ -9,7 +9,8 @@ const LIGHTHOUSE_API_KEY = process.env.LIGHTHOUSE_API_KEY;
 
 export async function POST(request: Request) {
   try {
-    const { url, resourceName, resourceType } = await request.json();
+    const { url, resourceName, resourceType, resourceId } =
+      await request.json();
 
     if (!url) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
@@ -54,14 +55,14 @@ export async function POST(request: Request) {
     const { Hash: cid, Name: name, Size: size } = uploadResponse.data;
     const gatewayUrl = `https://gateway.lighthouse.storage/ipfs/${cid}`;
 
-    // Track the resource in provenance
-    const resourceId = provenanceTracker.generateResourceId(
-      "resource",
-      resourceName || name
-    );
+    // Track the resource in provenance if resourceId is not provided
+    // If resourceId is provided, update the existing resource
+    const finalResourceId =
+      resourceId ||
+      provenanceTracker.generateResourceId("resource", resourceName || name);
 
     provenanceTracker.addEntity({
-      id: resourceId,
+      id: finalResourceId,
       type: "resource",
       metadata: {
         title: resourceName || name,
@@ -74,23 +75,26 @@ export async function POST(request: Request) {
       },
     });
 
-    provenanceTracker.addActivity({
-      id: provenanceTracker.generateActivityId("generate"),
-      type: "generate",
-      timestamp: new Date().toISOString(),
-      performedBy: "tool:lighthouse",
-      inputs: [url],
-      outputs: [resourceId],
-      metadata: {
-        task: "Store resource on Lighthouse",
-        storage: "lighthouse",
-        cid,
-      },
-    });
+    // Only add activity if this is a new resource
+    if (!resourceId) {
+      provenanceTracker.addActivity({
+        id: provenanceTracker.generateActivityId("generate"),
+        type: "generate",
+        timestamp: new Date().toISOString(),
+        performedBy: "tool:lighthouse",
+        inputs: [url],
+        outputs: [finalResourceId],
+        metadata: {
+          task: "Store resource on Lighthouse",
+          storage: "lighthouse",
+          cid,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      resourceId,
+      resourceId: finalResourceId,
       cid,
       name,
       size,

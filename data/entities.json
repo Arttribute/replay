@@ -61,5 +61,15 @@
       "toolUsed": "image_generation",
       "createdAt": "2025-05-31T13:45:18.325Z"
     }
+  },
+  {
+    "id": "agent:1748726461147",
+    "type": "ai",
+    "metadata": {
+      "name": "My new Agent",
+      "instructions": "You are a helpful assistant",
+      "assistantId": "asst_MTy5cEHsnKPxnws7l3wwnRzH",
+      "toolCount": 2
+    }
   }
 ]

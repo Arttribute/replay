@@ -25,7 +25,11 @@
               "description": "Expected output format"
             }
           },
-          "required": ["instruction", "inputs", "outputs"]
+          "required": [
+            "instruction",
+            "inputs",
+            "outputs"
+          ]
         }
       },
       {
@@ -41,7 +45,9 @@
               "description": "Image description prompt"
             }
           },
-          "required": ["input"]
+          "required": [
+            "input"
+          ]
         }
       }
     ],
@@ -75,7 +81,11 @@
               "description": "Expected output format"
             }
           },
-          "required": ["instruction", "inputs", "outputs"]
+          "required": [
+            "instruction",
+            "inputs",
+            "outputs"
+          ]
         }
       },
       {
@@ -91,7 +101,9 @@
               "description": "Image description prompt"
             }
           },
-          "required": ["input"]
+          "required": [
+            "input"
+          ]
         }
       },
       {
@@ -107,7 +119,9 @@
               "description": "Text to convert to speech"
             }
           },
-          "required": ["input"]
+          "required": [
+            "input"
+          ]
         }
       },
       {
@@ -123,12 +137,70 @@
               "description": "Base64 encoded audio data"
             }
           },
-          "required": ["base64Audio"]
+          "required": [
+            "base64Audio"
+          ]
         }
       }
     ],
     "assistantId": "asst_8IpACVjCUKlYGir7hEa6P3ty",
     "createdAt": "2025-05-31T11:26:54.879Z",
     "updatedAt": "2025-05-31T11:26:54.879Z"
+  },
+  {
+    "id": "agent:1748726461147",
+    "name": "My new Agent",
+    "instructions": "You are a helpful assistant",
+    "tools": [
+      {
+        "id": "text_generation",
+        "name": "Text Generation",
+        "description": "Generate text using GPT models",
+        "endpoint": "/api/llm/gpt",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "instruction": {
+              "type": "string",
+              "description": "The instruction for text generation"
+            },
+            "inputs": {
+              "type": "string",
+              "description": "Input text"
+            },
+            "outputs": {
+              "type": "string",
+              "description": "Expected output format"
+            }
+          },
+          "required": [
+            "instruction",
+            "inputs",
+            "outputs"
+          ]
+        }
+      },
+      {
+        "id": "image_generation",
+        "name": "Image Generation",
+        "description": "Generate images using DALL-E",
+        "endpoint": "/api/imagegen/dalle",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "string",
+              "description": "Image description prompt"
+            }
+          },
+          "required": [
+            "input"
+          ]
+        }
+      }
+    ],
+    "assistantId": "asst_MTy5cEHsnKPxnws7l3wwnRzH",
+    "createdAt": "2025-05-31T21:21:01.148Z",
+    "updatedAt": "2025-05-31T21:21:01.149Z"
   }
 ]

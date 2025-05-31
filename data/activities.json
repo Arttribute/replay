@@ -82,5 +82,19 @@
       "toolUsed": "image_generation",
       "arguments": "{\"input\":\"a cute cat sitting on a windowsill, looking outside, with a sunny day in the background and flowers on the windowsill.\"}"
     }
+  },
+  {
+    "id": "activity:generate-1748726461155",
+    "type": "generate",
+    "timestamp": "2025-05-31T21:21:01.155Z",
+    "performedBy": "human:system",
+    "inputs": [],
+    "outputs": [
+      "agent:1748726461147"
+    ],
+    "metadata": {
+      "task": "Create AI agent",
+      "agentName": "My new Agent"
+    }
   }
 ]

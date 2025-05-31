@@ -26,5 +26,19 @@
     "role": "creator",
     "weight": 0.8,
     "includedInCredits": true
+  },
+  {
+    "resourceId": "resource:1748699118311-generated-image",
+    "contributorId": "tool:dalle",
+    "role": "creator",
+    "weight": 0.8,
+    "includedInCredits": true
+  },
+  {
+    "resourceId": "resource:1748699118325-tool-output",
+    "contributorId": "agent:1748690077917",
+    "role": "creator",
+    "weight": 0.8,
+    "includedInCredits": true
   }
 ]

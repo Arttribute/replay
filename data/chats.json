@@ -163,5 +163,71 @@
     ],
     "createdAt": "2025-05-31T13:35:01.638Z",
     "updatedAt": "2025-05-31T13:35:28.669Z"
+  },
+  "thread_G0RUfZQAwA6HLttEr8n9O8xn": {
+    "id": "thread_G0RUfZQAwA6HLttEr8n9O8xn",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T13:41:28.490Z",
+    "updatedAt": "2025-05-31T13:41:28.490Z"
+  },
+  "thread_VAYACkgTG59Ng3cHAjenF05D": {
+    "id": "thread_VAYACkgTG59Ng3cHAjenF05D",
+    "agentId": "agent:1748690077917",
+    "messages": [
+      {
+        "id": "msg_1748698892436",
+        "role": "user",
+        "content": "hello",
+        "timestamp": "2025-05-31T13:41:32.436Z"
+      },
+      {
+        "id": "msg_1748698906542",
+        "role": "user",
+        "content": "hello again",
+        "timestamp": "2025-05-31T13:41:46.542Z"
+      },
+      {
+        "id": "msg_1748698934182",
+        "role": "user",
+        "content": "hello",
+        "timestamp": "2025-05-31T13:42:14.182Z"
+      }
+    ],
+    "createdAt": "2025-05-31T13:41:28.498Z",
+    "updatedAt": "2025-05-31T13:42:14.183Z"
+  },
+  "thread_8X9Tyll7qXhQdputgRwOHHu9": {
+    "id": "thread_8X9Tyll7qXhQdputgRwOHHu9",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T13:44:09.006Z",
+    "updatedAt": "2025-05-31T13:44:09.006Z"
+  },
+  "thread_rulcGQGlke7547GFQHAr7I5d": {
+    "id": "thread_rulcGQGlke7547GFQHAr7I5d",
+    "agentId": "agent:1748690077917",
+    "messages": [
+      {
+        "id": "msg_1748699053625",
+        "role": "user",
+        "content": "hello",
+        "timestamp": "2025-05-31T13:44:13.625Z"
+      },
+      {
+        "id": "msg_1748699062106",
+        "role": "user",
+        "content": "hello",
+        "timestamp": "2025-05-31T13:44:22.106Z"
+      },
+      {
+        "id": "msg_1748699088870",
+        "role": "user",
+        "content": "generate an image of a cat",
+        "timestamp": "2025-05-31T13:44:48.870Z"
+      }
+    ],
+    "createdAt": "2025-05-31T13:44:09.107Z",
+    "updatedAt": "2025-05-31T13:44:48.871Z"
   }
 }

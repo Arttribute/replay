@@ -221,8 +221,8 @@ export function AgentChat({ agent, onClose }: AgentChatProps) {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+    <div className="flex flex-col h-90">
+      <ScrollArea className="flex-1 p-4 h-90" ref={scrollAreaRef}>
         <div className="space-y-4">
           {messages.map((message) => (
             <div key={message.id} className="space-y-2">

@@ -359,7 +359,7 @@ export function AgentManager() {
       )}
 
       <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
-        <DialogContent className="max-w-4xl h-[80vh]">
+        <DialogContent className="max-w-6xl h-[80vh]">
           <DialogHeader>
             <DialogTitle>Chat with {selectedAgent?.name}</DialogTitle>
             <DialogDescription>
@@ -367,10 +367,12 @@ export function AgentManager() {
             </DialogDescription>
           </DialogHeader>
           {selectedAgent && (
-            <AgentChat
-              agent={selectedAgent}
-              onClose={() => setIsChatOpen(false)}
-            />
+            <ScrollArea className="h-90">
+              <AgentChat
+                agent={selectedAgent}
+                onClose={() => setIsChatOpen(false)}
+              />
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>

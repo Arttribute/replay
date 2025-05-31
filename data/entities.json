@@ -1,0 +1,44 @@
+[
+  {
+    "id": "resource:1748695087415-generated-image",
+    "type": "resource",
+    "metadata": {
+      "title": "Generated image: A cute, fluffy cat sitting on ...",
+      "format": "image",
+      "prompt": "A cute, fluffy cat sitting on a windowsill with sunlight streaming through the window, surrounded by colorful potted plants.",
+      "createdAt": "2025-05-31T12:38:07.416Z",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-3rhNj9eXh69BEGDUnyk6L40m/user-bkDzTv4TPcTfTZmQPWNbA4No/img-36gUO1dWacTAKE6aaK38VDYD.png?st=2025-05-31T11%3A38%3A06Z&se=2025-05-31T13%3A38%3A06Z&sp=r&sv=2024-08-04&sr=b&rscd=inline&rsct=image/png&skoid=52f8f7b3-ca8d-4b21-9807-8b9df114d84c&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-31T12%3A38%3A06Z&ske=2025-06-01T12%3A38%3A06Z&sks=b&skv=2024-08-04&sig=%2BFl2CAqmj9SVrBQiPzcPH45PPgCzcMLNqrJrmS3lWuI%3D"
+    }
+  },
+  {
+    "id": "resource:1748695087430-tool-output",
+    "type": "resource",
+    "metadata": {
+      "title": "image_generation output",
+      "format": "json",
+      "toolUsed": "image_generation",
+      "createdAt": "2025-05-31T12:38:07.431Z"
+    }
+  },
+  {
+    "id": "resource:1748695382656-generated-image",
+    "type": "resource",
+    "metadata": {
+      "title": "Generated image: A cute cat sitting on a window...",
+      "format": "image",
+      "prompt": "A cute cat sitting on a windowsill looking outside on a sunny day",
+      "createdAt": "2025-05-31T12:43:02.656Z",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-3rhNj9eXh69BEGDUnyk6L40m/user-bkDzTv4TPcTfTZmQPWNbA4No/img-LJV5JBYg2eYfBthZe1z1Ajv2.png?st=2025-05-31T11%3A43%3A02Z&se=2025-05-31T13%3A43%3A02Z&sp=r&sv=2024-08-04&sr=b&rscd=inline&rsct=image/png&skoid=52f8f7b3-ca8d-4b21-9807-8b9df114d84c&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-30T17%3A53%3A38Z&ske=2025-05-31T17%3A53%3A38Z&sks=b&skv=2024-08-04&sig=49Zd5mbHDVWvHHc0UVgULVmfhp4C4%2BNkmL4oMJ2lp%2BQ%3D"
+    }
+  },
+  {
+    "id": "resource:1748695382672-tool-output",
+    "type": "resource",
+    "metadata": {
+      "title": "image_generation output",
+      "format": "json",
+      "toolUsed": "image_generation",
+      "createdAt": "2025-05-31T12:43:02.672Z"
+    }
+  }
+]

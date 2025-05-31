@@ -1,0 +1,58 @@
+[
+  {
+    "id": "activity:generate-1748695087417",
+    "type": "generate",
+    "timestamp": "2025-05-31T12:38:07.417Z",
+    "performedBy": "tool:dalle",
+    "inputs": [],
+    "outputs": [
+      "resource:1748695087415-generated-image"
+    ],
+    "metadata": {
+      "prompt": "A cute, fluffy cat sitting on a windowsill with sunlight streaming through the window, surrounded by colorful potted plants.",
+      "model": "dall-e-3"
+    }
+  },
+  {
+    "id": "activity:generate-1748695087431",
+    "type": "generate",
+    "timestamp": "2025-05-31T12:38:07.431Z",
+    "performedBy": "agent:1748690077917",
+    "inputs": [],
+    "outputs": [
+      "resource:1748695087430-tool-output"
+    ],
+    "metadata": {
+      "toolUsed": "image_generation",
+      "arguments": "{\"input\":\"A cute, fluffy cat sitting on a windowsill with sunlight streaming through the window, surrounded by colorful potted plants.\"}"
+    }
+  },
+  {
+    "id": "activity:generate-1748695382658",
+    "type": "generate",
+    "timestamp": "2025-05-31T12:43:02.658Z",
+    "performedBy": "tool:dalle",
+    "inputs": [],
+    "outputs": [
+      "resource:1748695382656-generated-image"
+    ],
+    "metadata": {
+      "prompt": "A cute cat sitting on a windowsill looking outside on a sunny day",
+      "model": "dall-e-3"
+    }
+  },
+  {
+    "id": "activity:generate-1748695382673",
+    "type": "generate",
+    "timestamp": "2025-05-31T12:43:02.673Z",
+    "performedBy": "agent:1748690077917",
+    "inputs": [],
+    "outputs": [
+      "resource:1748695382672-tool-output"
+    ],
+    "metadata": {
+      "toolUsed": "image_generation",
+      "arguments": "{\"input\":\"A cute cat sitting on a windowsill looking outside on a sunny day\"}"
+    }
+  }
+]

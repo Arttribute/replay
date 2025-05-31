@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
+import { provenanceTracker } from "@/lib/provenance";
 
 const API_KEY = process.env.OPENAI_API_KEY;
 const openai = new OpenAI({ apiKey: API_KEY });
@@ -12,6 +13,8 @@ export async function POST(request: Request) {
     const requestbody = await request.json();
     const { input } = requestbody;
 
+    console.log("Generating image with prompt:", input);
+
     const response = await openai.images.generate({
       model: "dall-e-3",
       prompt: input,
@@ -19,14 +22,43 @@ export async function POST(request: Request) {
       size: "1024x1024",
     });
 
-    if (response.data && response.data[0] && response.data[0].url) {
-      return new NextResponse(JSON.stringify(response.data[0].url), {
-        status: 200,
-      });
-    } else {
-      throw new Error("Invalid response data");
-    }
+    const imageUrl = response.data[0].url;
+
+    // Track image generation in provenance
+    const resourceId = provenanceTracker.generateResourceId(
+      "resource",
+      "generated-image"
+    );
+    provenanceTracker.addEntity({
+      id: resourceId,
+      type: "resource",
+      metadata: {
+        title: `Generated image: ${input.substring(0, 30)}...`,
+        format: "image",
+        prompt: input,
+        createdAt: new Date().toISOString(),
+        url: imageUrl,
+      },
+    });
+
+    provenanceTracker.addActivity({
+      id: provenanceTracker.generateActivityId("generate"),
+      type: "generate",
+      timestamp: new Date().toISOString(),
+      performedBy: "tool:dalle",
+      inputs: [],
+      outputs: [resourceId],
+      metadata: {
+        prompt: input,
+        model: "dall-e-3",
+      },
+    });
+
+    return NextResponse.json(imageUrl, {
+      status: 200,
+    });
   } catch (error: any) {
-    return new NextResponse(error.message, { status: 500 });
+    console.error("Error generating image:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

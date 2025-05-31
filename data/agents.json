@@ -54,5 +54,189 @@
     "assistantId": "asst_MDlV4KcyBDraDcUywEGnpbtt",
     "createdAt": "2025-05-31T11:14:37.917Z",
     "updatedAt": "2025-05-31T11:14:37.917Z"
+  },
+  {
+    "id": "agent:1748690814878",
+    "name": "another agent",
+    "instructions": "Do as intructed",
+    "tools": [
+      {
+        "id": "text_generation",
+        "name": "Text Generation",
+        "description": "Generate text using GPT models",
+        "endpoint": "/api/llm/gpt",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "instruction": {
+              "type": "string",
+              "description": "The instruction for text generation"
+            },
+            "inputs": {
+              "type": "string",
+              "description": "Input text"
+            },
+            "outputs": {
+              "type": "string",
+              "description": "Expected output format"
+            }
+          },
+          "required": [
+            "instruction",
+            "inputs",
+            "outputs"
+          ]
+        }
+      },
+      {
+        "id": "image_generation",
+        "name": "Image Generation",
+        "description": "Generate images using DALL-E",
+        "endpoint": "/api/imagegen/dalle",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "string",
+              "description": "Image description prompt"
+            }
+          },
+          "required": [
+            "input"
+          ]
+        }
+      },
+      {
+        "id": "text_to_speech",
+        "name": "Text to Speech",
+        "description": "Convert text to speech audio",
+        "endpoint": "/api/voice/tts",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "string",
+              "description": "Text to convert to speech"
+            }
+          },
+          "required": [
+            "input"
+          ]
+        }
+      },
+      {
+        "id": "speech_to_text",
+        "name": "Speech to Text",
+        "description": "Convert speech audio to text",
+        "endpoint": "/api/voice/whisper",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "base64Audio": {
+              "type": "string",
+              "description": "Base64 encoded audio data"
+            }
+          },
+          "required": [
+            "base64Audio"
+          ]
+        }
+      }
+    ],
+    "assistantId": "asst_8IpACVjCUKlYGir7hEa6P3ty",
+    "createdAt": "2025-05-31T11:26:54.879Z",
+    "updatedAt": "2025-05-31T11:26:54.879Z"
+  },
+  {
+    "id": "agent:1748690837249",
+    "name": "yety another",
+    "instructions": "Do as instructed",
+    "tools": [
+      {
+        "id": "text_generation",
+        "name": "Text Generation",
+        "description": "Generate text using GPT models",
+        "endpoint": "/api/llm/gpt",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "instruction": {
+              "type": "string",
+              "description": "The instruction for text generation"
+            },
+            "inputs": {
+              "type": "string",
+              "description": "Input text"
+            },
+            "outputs": {
+              "type": "string",
+              "description": "Expected output format"
+            }
+          },
+          "required": [
+            "instruction",
+            "inputs",
+            "outputs"
+          ]
+        }
+      },
+      {
+        "id": "image_generation",
+        "name": "Image Generation",
+        "description": "Generate images using DALL-E",
+        "endpoint": "/api/imagegen/dalle",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "string",
+              "description": "Image description prompt"
+            }
+          },
+          "required": [
+            "input"
+          ]
+        }
+      },
+      {
+        "id": "text_to_speech",
+        "name": "Text to Speech",
+        "description": "Convert text to speech audio",
+        "endpoint": "/api/voice/tts",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "string",
+              "description": "Text to convert to speech"
+            }
+          },
+          "required": [
+            "input"
+          ]
+        }
+      },
+      {
+        "id": "speech_to_text",
+        "name": "Speech to Text",
+        "description": "Convert speech audio to text",
+        "endpoint": "/api/voice/whisper",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "base64Audio": {
+              "type": "string",
+              "description": "Base64 encoded audio data"
+            }
+          },
+          "required": [
+            "base64Audio"
+          ]
+        }
+      }
+    ],
+    "assistantId": "asst_Cl08bKIgEPKWui3TZEUdMTp2",
+    "createdAt": "2025-05-31T11:27:17.249Z",
+    "updatedAt": "2025-05-31T11:27:17.249Z"
   }
 ]

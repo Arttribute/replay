@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { provenanceTracker } from "@/lib/provenance";
 import { agentStorage } from "@/lib/storage";
+import { chatStorage } from "@/lib/storage";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -11,26 +12,9 @@ export async function POST(request: Request) {
   try {
     const { threadId, agentId, message } = await request.json();
 
-    console.log("Chat request for agent:", agentId);
-
     const agent = agentStorage.getById(agentId);
-    console.log("Agent found:", agent ? agent.name : "Not found");
-
     if (!agent) {
-      // List all available agents for debugging
-      const allAgents = agentStorage.getAll();
-      console.log(
-        "Available agents:",
-        allAgents.map((a) => ({ id: a.id, name: a.name }))
-      );
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
-    }
-
-    if (!agent.assistantId) {
-      return NextResponse.json(
-        { error: "Agent has no associated OpenAI assistant" },
-        { status: 400 }
-      );
     }
 
     // Add message to thread
@@ -38,7 +22,14 @@ export async function POST(request: Request) {
       role: "user",
       content: message,
     });
+    // Store user message in our system
 
+    chatStorage.addMessage(threadId, {
+      id: `msg_${Date.now()}`,
+      role: "user",
+      content: message,
+      timestamp: new Date().toISOString(),
+    });
     // Create a readable stream for SSE
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -46,8 +37,16 @@ export async function POST(request: Request) {
         try {
           // Start the run with streaming
           const runStream = openai.beta.threads.runs.stream(threadId, {
-            assistant_id: agent.assistantId!,
+            assistant_id: agent.assistantId || "",
           });
+
+          const assistantMessage = {
+            id: `msg_${Date.now() + 1}`,
+            role: "assistant",
+            content: "",
+            timestamp: new Date().toISOString(),
+            toolCalls: [],
+          };
 
           for await (const event of runStream) {
             if (event.event === "thread.message.delta") {
@@ -55,9 +54,12 @@ export async function POST(request: Request) {
               if (
                 delta.content &&
                 delta.content[0] &&
-                delta.content[0].type === "text"
+                delta.content[0].type === "text" &&
+                delta.content[0].text &&
+                delta.content[0].text.value
               ) {
-                const content = delta.content[0].text;
+                const content = delta.content[0].text.value;
+                assistantMessage.content += content;
                 controller.enqueue(
                   encoder.encode(
                     `data: ${JSON.stringify({
@@ -75,7 +77,6 @@ export async function POST(request: Request) {
                 const toolOutputs = [];
 
                 for (const toolCall of toolCalls) {
-                  // Send tool call info to client
                   controller.enqueue(
                     encoder.encode(
                       `data: ${JSON.stringify({
@@ -140,11 +141,11 @@ export async function POST(request: Request) {
                     },
                   });
                 }
+
                 // Submit tool outputs
-                await openai.beta.threads.runs.submitToolOutputs(threadId, {
-                  thread_id: threadId,
-                  tool_outputs: toolOutputs,
-                });
+                //await openai.beta.threads.runs.submitToolOutputs(threadId, event.data.id, {
+                //  tool_outputs: toolOutputs,
+                //})
               }
             }
           }
@@ -165,7 +166,6 @@ export async function POST(request: Request) {
       },
     });
   } catch (error: any) {
-    console.error("Chat error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

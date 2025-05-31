@@ -1,0 +1,30 @@
+[
+  {
+    "resourceId": "resource:1748695087415-generated-image",
+    "contributorId": "tool:dalle",
+    "role": "creator",
+    "weight": 0.8,
+    "includedInCredits": true
+  },
+  {
+    "resourceId": "resource:1748695087430-tool-output",
+    "contributorId": "agent:1748690077917",
+    "role": "creator",
+    "weight": 0.8,
+    "includedInCredits": true
+  },
+  {
+    "resourceId": "resource:1748695382656-generated-image",
+    "contributorId": "tool:dalle",
+    "role": "creator",
+    "weight": 0.8,
+    "includedInCredits": true
+  },
+  {
+    "resourceId": "resource:1748695382672-tool-output",
+    "contributorId": "agent:1748690077917",
+    "role": "creator",
+    "weight": 0.8,
+    "includedInCredits": true
+  }
+]

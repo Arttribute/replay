@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { provenanceTracker } from "@/lib/provenance";
+import { provenanceStorage } from "@/lib/storage";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
 
-    let entities = provenanceTracker.getEntities();
+    let entities = provenanceStorage.getEntities();
 
     if (type) {
       entities = entities.filter((entity) => entity.type === type);
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const entity = await request.json();
-    provenanceTracker.addEntity(entity);
+    provenanceStorage.addEntity(entity);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

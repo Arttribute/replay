@@ -10,7 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Send, Bot, User, Loader2, PenToolIcon as Tool } from "lucide-react";
-import type { Agent, ChatMessage } from "@/types/agent";
+import type { Agent, ChatMessage, ToolCall } from "@/types/agent";
+import Image from "next/image";
 
 interface AgentChatProps {
   agent: Agent;
@@ -45,6 +46,11 @@ export function AgentChat({ agent, onClose }: AgentChatProps) {
       if (response.ok) {
         const data = await response.json();
         setThreadId(data.threadId);
+
+        // Load existing messages if any
+        if (data.messages && data.messages.length > 0) {
+          setMessages(data.messages);
+        }
       }
     } catch (error) {
       console.error("Failed to initialize thread:", error);
@@ -160,6 +166,60 @@ export function AgentChat({ agent, onClose }: AgentChatProps) {
     }
   };
 
+  const isImageUrl = (url: string): boolean => {
+    if (typeof url !== "string") return false;
+    return (
+      url.match(/\.(jpeg|jpg|gif|png|webp)$/) !== null ||
+      url.includes("images.unsplash.com")
+    );
+  };
+
+  const renderToolCallResult = (toolCall: ToolCall) => {
+    // Handle image generation results
+    if (
+      toolCall.function.name === "image_generation" &&
+      typeof toolCall.result === "string"
+    ) {
+      return (
+        <div>
+          <div className="mb-2">
+            <strong>Generated Image:</strong>
+            <p className="text-xs text-muted-foreground break-all mb-2">
+              {toolCall.result}
+            </p>
+          </div>
+          <div className="relative w-full h-64 rounded-md overflow-hidden">
+            <Image
+              src={toolCall.result || "/placeholder.svg"}
+              alt="Generated image"
+              fill
+              className="object-contain"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // Handle agent call results
+    if (toolCall.function.name === "call_agent" && toolCall.result) {
+      return (
+        <div>
+          <strong>Agent Response:</strong>
+          <p className="whitespace-pre-wrap">{toolCall.result}</p>
+        </div>
+      );
+    }
+
+    // Default rendering for other tool results
+    return (
+      <pre className="mt-1 p-2 bg-green-50 border border-green-200 rounded text-xs overflow-x-auto">
+        {typeof toolCall.result === "string"
+          ? toolCall.result
+          : JSON.stringify(toolCall.result, null, 2)}
+      </pre>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
@@ -235,11 +295,7 @@ export function AgentChat({ agent, onClose }: AgentChatProps) {
                           {toolCall.result && (
                             <div>
                               <strong>Result:</strong>
-                              <pre className="mt-1 p-2 bg-green-50 border border-green-200 rounded text-xs overflow-x-auto">
-                                {typeof toolCall.result === "string"
-                                  ? toolCall.result
-                                  : JSON.stringify(toolCall.result, null, 2)}
-                              </pre>
+                              {renderToolCallResult(toolCall)}
                             </div>
                           )}
                         </div>

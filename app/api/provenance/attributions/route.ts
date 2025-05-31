@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { provenanceTracker } from "@/lib/provenance";
+import { provenanceStorage } from "@/lib/storage";
 
 export async function GET() {
   try {
-    const attributions = provenanceTracker.getAttributions();
+    const attributions = provenanceStorage.getAttributions();
     return NextResponse.json(attributions);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -13,7 +13,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const attribution = await request.json();
-    provenanceTracker.addAttribution(attribution);
+    provenanceStorage.addAttribution(attribution);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

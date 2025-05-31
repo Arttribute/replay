@@ -1,127 +1,123 @@
-import {
-  time,
-  loadFixture,
-} from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
+// test/ProvenanceEconomy.test.ts
 import { expect } from "chai";
-import hre from "hardhat";
+import { ethers } from "hardhat";
+import { Contract, Signer } from "ethers";
 
-describe("Lock", function () {
-  // We define a fixture to reuse the same setup in every test.
-  // We use loadFixture to run this setup once, snapshot that state,
-  // and reset Hardhat Network to that snapshot in every test.
-  async function deployOneYearLockFixture() {
-    const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-    const ONE_GWEI = 1_000_000_000;
+describe("ProvenanceEconomy", function () {
+  let contract: Contract;
+  let owner: Signer, alice: Signer, bob: Signer, carol: Signer;
 
-    const lockedAmount = ONE_GWEI;
-    const unlockTime = (await time.latest()) + ONE_YEAR_IN_SECS;
-
-    // Contracts are deployed using the first signer/account by default
-    const [owner, otherAccount] = await hre.ethers.getSigners();
-
-    const Lock = await hre.ethers.getContractFactory("Lock");
-    const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
-
-    return { lock, unlockTime, lockedAmount, owner, otherAccount };
-  }
-
-  describe("Deployment", function () {
-    it("Should set the right unlockTime", async function () {
-      const { lock, unlockTime } = await loadFixture(deployOneYearLockFixture);
-
-      expect(await lock.unlockTime()).to.equal(unlockTime);
-    });
-
-    it("Should set the right owner", async function () {
-      const { lock, owner } = await loadFixture(deployOneYearLockFixture);
-
-      expect(await lock.owner()).to.equal(owner.address);
-    });
-
-    it("Should receive and store the funds to lock", async function () {
-      const { lock, lockedAmount } = await loadFixture(
-        deployOneYearLockFixture
-      );
-
-      expect(await hre.ethers.provider.getBalance(lock.target)).to.equal(
-        lockedAmount
-      );
-    });
-
-    it("Should fail if the unlockTime is not in the future", async function () {
-      // We don't use the fixture here because we want a different deployment
-      const latestTime = await time.latest();
-      const Lock = await hre.ethers.getContractFactory("Lock");
-      await expect(Lock.deploy(latestTime, { value: 1 })).to.be.revertedWith(
-        "Unlock time should be in the future"
-      );
-    });
+  beforeEach(async function () {
+    [owner, alice, bob, carol] = await ethers.getSigners();
+    const ProvenanceEconomyFactory = await ethers.getContractFactory(
+      "ProvenanceEconomy"
+    );
+    contract = await ProvenanceEconomyFactory.deploy();
+    await contract.deployed();
   });
 
-  describe("Withdrawals", function () {
-    describe("Validations", function () {
-      it("Should revert with the right error if called too soon", async function () {
-        const { lock } = await loadFixture(deployOneYearLockFixture);
+  it("should register a new resource", async function () {
+    await contract.connect(alice).registerResource("video1", "cid123");
+    const info = await contract.getResourceInfo("video1");
+    expect(info.cid).to.equal("cid123");
+    expect(info.submitter).to.equal(await alice.getAddress());
+  });
 
-        await expect(lock.withdraw()).to.be.revertedWith(
-          "You can't withdraw yet"
-        );
-      });
+  it("should add attributions", async function () {
+    await contract.connect(alice).registerResource("video1", "cid123");
+    await contract
+      .connect(alice)
+      .addAttribution(
+        "video1",
+        await bob.getAddress(),
+        "creator",
+        6000,
+        true,
+        "Main contributor"
+      );
+    const attributions = await contract.getAttributions("video1");
+    expect(attributions.length).to.equal(1);
+    expect(attributions[0].contributor).to.equal(await bob.getAddress());
+    expect(attributions[0].weight).to.equal(6000);
+  });
 
-      it("Should revert with the right error if called from another account", async function () {
-        const { lock, unlockTime, otherAccount } = await loadFixture(
-          deployOneYearLockFixture
-        );
+  it("should reject non-submitters from adding attribution", async function () {
+    await contract.connect(alice).registerResource("video1", "cid123");
+    await expect(
+      contract
+        .connect(bob)
+        .addAttribution(
+          "video1",
+          await bob.getAddress(),
+          "creator",
+          5000,
+          true,
+          "Invalid attempt"
+        )
+    ).to.be.revertedWith("Not the resource submitter");
+  });
 
-        // We can increase the time in Hardhat Network
-        await time.increaseTo(unlockTime);
+  it("should allow revenue deposits and contributor claims", async function () {
+    await contract.connect(alice).registerResource("video1", "cid123");
+    await contract
+      .connect(alice)
+      .addAttribution(
+        "video1",
+        await bob.getAddress(),
+        "creator",
+        6000,
+        true,
+        "Main"
+      );
+    await contract
+      .connect(alice)
+      .addAttribution(
+        "video1",
+        await carol.getAddress(),
+        "contributor",
+        4000,
+        true,
+        "Support"
+      );
 
-        // We use lock.connect() to send a transaction from another account
-        await expect(lock.connect(otherAccount).withdraw()).to.be.revertedWith(
-          "You aren't the owner"
-        );
-      });
+    await contract
+      .connect(owner)
+      .depositRevenue("video1", { value: ethers.utils.parseEther("1.0") });
 
-      it("Shouldn't fail if the unlockTime has arrived and the owner calls it", async function () {
-        const { lock, unlockTime } = await loadFixture(
-          deployOneYearLockFixture
-        );
+    const beforeClaim = await ethers.provider.getBalance(
+      await bob.getAddress()
+    );
+    const tx = await contract.connect(bob).claim("video1");
+    await tx.wait();
+    const afterClaim = await ethers.provider.getBalance(await bob.getAddress());
 
-        // Transactions are sent using the first signer by default
-        await time.increaseTo(unlockTime);
+    const bobClaimed = await contract.getClaimedAmount(
+      "video1",
+      await bob.getAddress()
+    );
+    expect(bobClaimed).to.equal(ethers.utils.parseEther("0.6"));
+    expect(afterClaim).to.be.above(beforeClaim); // allow some slack for gas
+  });
 
-        await expect(lock.withdraw()).not.to.be.reverted;
-      });
-    });
+  it("should not allow double claims", async function () {
+    await contract.connect(alice).registerResource("video1", "cid123");
+    await contract
+      .connect(alice)
+      .addAttribution(
+        "video1",
+        await bob.getAddress(),
+        "creator",
+        6000,
+        true,
+        "Main"
+      );
+    await contract
+      .connect(owner)
+      .depositRevenue("video1", { value: ethers.utils.parseEther("1.0") });
 
-    describe("Events", function () {
-      it("Should emit an event on withdrawals", async function () {
-        const { lock, unlockTime, lockedAmount } = await loadFixture(
-          deployOneYearLockFixture
-        );
-
-        await time.increaseTo(unlockTime);
-
-        await expect(lock.withdraw())
-          .to.emit(lock, "Withdrawal")
-          .withArgs(lockedAmount, anyValue); // We accept any value as `when` arg
-      });
-    });
-
-    describe("Transfers", function () {
-      it("Should transfer the funds to the owner", async function () {
-        const { lock, unlockTime, lockedAmount, owner } = await loadFixture(
-          deployOneYearLockFixture
-        );
-
-        await time.increaseTo(unlockTime);
-
-        await expect(lock.withdraw()).to.changeEtherBalances(
-          [owner, lock],
-          [lockedAmount, -lockedAmount]
-        );
-      });
-    });
+    await contract.connect(bob).claim("video1");
+    await expect(contract.connect(bob).claim("video1")).to.be.revertedWith(
+      "Nothing to claim"
+    );
   });
 });

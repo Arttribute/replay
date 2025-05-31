@@ -367,7 +367,7 @@ export function AgentManager() {
             </DialogDescription>
           </DialogHeader>
           {selectedAgent && (
-            <ScrollArea className="w-[60vw] h-90">
+            <ScrollArea className=" h-90">
               <AgentChat
                 agent={selectedAgent}
                 onClose={() => setIsChatOpen(false)}

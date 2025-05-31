@@ -9,10 +9,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AgentManager } from "@/components/agent-manager";
-import { ProvenanceGraph } from "@/components/provenance-graph";
-import { ActivityFeed } from "@/components/activity-feed";
-import { ResourceLibrary } from "@/components/resource-library";
+import { AgentManager } from "@/components/main/agent-manager";
+import { ProvenanceGraph } from "@/components/main/provenance-graph";
+import { ActivityFeed } from "@/components/main/activity-feed";
+import { ResourceLibrary } from "@/components/main/resource-library";
 import { Bot, Network, Activity, FolderOpen } from "lucide-react";
 
 export default function HomePage() {

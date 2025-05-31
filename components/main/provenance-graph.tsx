@@ -22,6 +22,7 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  X,
 } from "lucide-react";
 import {
   Dialog,
@@ -32,6 +33,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Entity, Activity, Attribution } from "@/types/provenance";
 
 interface GraphNode {
@@ -60,7 +68,11 @@ interface GraphFilters {
   searchTerm: string;
 }
 
-export function ProvenanceGraph() {
+interface ProvenanceGraphProps {
+  focusedResourceId?: string | null;
+}
+
+export function ProvenanceGraph({ focusedResourceId }: ProvenanceGraphProps) {
   const [entities, setEntities] = useState<Entity[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [attributions, setAttributions] = useState<Attribution[]>([]);
@@ -72,6 +84,9 @@ export function ProvenanceGraph() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [selectedResourceId, setSelectedResourceId] = useState<string | null>(
+    null
+  );
   const svgRef = useRef<SVGSVGElement>(null);
   const [filters, setFilters] = useState<GraphFilters>({
     entityTypes: ["resource", "ai", "human", "tool"],
@@ -86,10 +101,16 @@ export function ProvenanceGraph() {
   }, []);
 
   useEffect(() => {
+    if (focusedResourceId) {
+      setSelectedResourceId(focusedResourceId);
+    }
+  }, [focusedResourceId]);
+
+  useEffect(() => {
     if (entities.length > 0 || activities.length > 0) {
       generateGraph();
     }
-  }, [entities, activities, attributions, filters]);
+  }, [entities, activities, attributions, filters, selectedResourceId]);
 
   const loadProvenanceData = async () => {
     try {
@@ -119,8 +140,28 @@ export function ProvenanceGraph() {
     }
   };
 
+  const getRelatedActivities = (resourceId: string): Activity[] => {
+    return activities.filter(
+      (activity) =>
+        activity.inputs.includes(resourceId) ||
+        activity.outputs.includes(resourceId)
+    );
+  };
+
+  const getRelatedEntities = (relatedActivities: Activity[]): string[] => {
+    const entityIds = new Set<string>();
+
+    relatedActivities.forEach((activity) => {
+      activity.inputs.forEach((input) => entityIds.add(input));
+      activity.outputs.forEach((output) => entityIds.add(output));
+      entityIds.add(activity.performedBy);
+    });
+
+    return Array.from(entityIds);
+  };
+
   const generateGraph = () => {
-    const filteredEntities = entities.filter((entity) => {
+    let filteredEntities = entities.filter((entity) => {
       const matchesType = filters.entityTypes.includes(entity.type);
       const matchesSearch =
         !filters.searchTerm ||
@@ -131,7 +172,7 @@ export function ProvenanceGraph() {
       return matchesType && matchesSearch;
     });
 
-    const filteredActivities = activities.filter((activity) => {
+    let filteredActivities = activities.filter((activity) => {
       const matchesType = filters.activityTypes.includes(activity.type);
       const matchesSearch =
         !filters.searchTerm ||
@@ -146,17 +187,33 @@ export function ProvenanceGraph() {
       return matchesType && matchesSearch && matchesDate;
     });
 
+    // If a specific resource is selected, filter to show only related items
+    if (selectedResourceId) {
+      const relatedActivities = getRelatedActivities(selectedResourceId);
+      const relatedEntityIds = getRelatedEntities(relatedActivities);
+
+      filteredActivities = relatedActivities.filter((activity) =>
+        filteredActivities.some((fa) => fa.id === activity.id)
+      );
+      filteredEntities = filteredEntities.filter((entity) =>
+        relatedEntityIds.includes(entity.id)
+      );
+    }
+
     // Create nodes with better positioning
-    const entityNodes: GraphNode[] = filteredEntities.map((entity, index) => ({
-      id: entity.id,
-      type: "entity",
-      x: (index % 6) * 200 + 100,
-      y: Math.floor(index / 6) * 120 + 50,
-      data: entity,
-      attributions: attributions.filter(
-        (attr) => attr.resourceId === entity.id
-      ),
-    }));
+    const entityNodes: GraphNode[] = filteredEntities.map((entity, index) => {
+      const isSelected = entity.id === selectedResourceId;
+      return {
+        id: entity.id,
+        type: "entity",
+        x: isSelected ? 400 : (index % 6) * 200 + 100,
+        y: isSelected ? 200 : Math.floor(index / 6) * 120 + 50,
+        data: entity,
+        attributions: attributions.filter(
+          (attr) => attr.resourceId === entity.id
+        ),
+      };
+    });
 
     const activityNodes: GraphNode[] = filteredActivities.map(
       (activity, index) => ({
@@ -224,19 +281,22 @@ export function ProvenanceGraph() {
     }
   };
 
-  const getEntityBorderColor = (type: string) => {
-    switch (type) {
-      case "resource":
-        return "#3b82f6";
-      case "ai":
-        return "#8b5cf6";
-      case "human":
-        return "#10b981";
-      case "tool":
-        return "#f97316";
-      default:
-        return "#64748b";
-    }
+  const getEntityBorderColor = (type: string, isSelected = false) => {
+    const baseColor = (() => {
+      switch (type) {
+        case "resource":
+          return "#3b82f6";
+        case "ai":
+          return "#8b5cf6";
+        case "human":
+          return "#10b981";
+        case "tool":
+          return "#f97316";
+        default:
+          return "#64748b";
+      }
+    })();
+    return isSelected ? "#ef4444" : baseColor;
   };
 
   const getActivityColor = (type: string) => {
@@ -290,6 +350,10 @@ export function ProvenanceGraph() {
     setPan({ x: 0, y: 0 });
   };
 
+  const clearResourceFocus = () => {
+    setSelectedResourceId(null);
+  };
+
   const exportGraph = () => {
     const graphData = {
       nodes: nodes.map((node) => ({
@@ -309,6 +373,7 @@ export function ProvenanceGraph() {
         totalEntities: entities.length,
         totalActivities: activities.length,
         totalAttributions: attributions.length,
+        focusedResource: selectedResourceId,
       },
     };
 
@@ -319,8 +384,8 @@ export function ProvenanceGraph() {
     const link = document.createElement("a");
     link.href = url;
     link.download = `provenance-graph-${
-      new Date().toISOString().split("T")[0]
-    }.json`;
+      selectedResourceId ? `${selectedResourceId}-` : ""
+    }${new Date().toISOString().split("T")[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -340,8 +405,42 @@ export function ProvenanceGraph() {
     });
   };
 
+  const resourceEntities = entities.filter(
+    (entity) => entity.type === "resource"
+  );
+
   return (
     <div className="space-y-6">
+      {/* Resource Focus Section */}
+      {selectedResourceId && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                  Focused View
+                </Badge>
+                <span className="font-medium">
+                  {entities.find((e) => e.id === selectedResourceId)?.metadata
+                    .title ||
+                    entities.find((e) => e.id === selectedResourceId)?.metadata
+                      .name ||
+                    selectedResourceId}
+                </span>
+              </div>
+              <Button variant="outline" size="sm" onClick={clearResourceFocus}>
+                <X className="h-4 w-4 mr-2" />
+                Show All
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Showing provenance graph for the selected resource and all related
+              activities and entities.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Button
@@ -355,6 +454,28 @@ export function ProvenanceGraph() {
             />
             Refresh
           </Button>
+
+          {/* Resource Selector */}
+          <Select
+            value={selectedResourceId || "all"}
+            onValueChange={(value) =>
+              setSelectedResourceId(value === "all" ? null : value)
+            }
+          >
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Focus on specific resource..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Resources</SelectItem>
+              {resourceEntities.map((resource) => (
+                <SelectItem key={resource.id} value={resource.id}>
+                  {resource.metadata.title ||
+                    resource.metadata.name ||
+                    resource.id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <Dialog
             open={isFilterDialogOpen}
@@ -506,8 +627,9 @@ export function ProvenanceGraph() {
             <CardHeader>
               <CardTitle>Interactive Provenance Graph</CardTitle>
               <CardDescription>
-                Explore the relationships between entities and activities. Click
-                nodes for details, drag to pan.
+                {selectedResourceId
+                  ? "Focused view showing the complete provenance of the selected resource"
+                  : "Explore the relationships between entities and activities. Click nodes for details, drag to pan."}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
@@ -591,6 +713,7 @@ export function ProvenanceGraph() {
                     {/* Render nodes */}
                     {nodes.map((node) => {
                       const isSelected = selectedNode?.id === node.id;
+                      const isFocused = node.id === selectedResourceId;
 
                       if (node.type === "entity") {
                         const entity = node.data as Entity;
@@ -610,11 +733,28 @@ export function ProvenanceGraph() {
                               height="80"
                               rx="8"
                               fill={getEntityColor(entity.type)}
-                              stroke={getEntityBorderColor(entity.type)}
-                              strokeWidth={isSelected ? "3" : "2"}
+                              stroke={getEntityBorderColor(
+                                entity.type,
+                                isFocused
+                              )}
+                              strokeWidth={
+                                isSelected ? "3" : isFocused ? "4" : "2"
+                              }
                               className="cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => handleNodeClick(node)}
                             />
+                            {isFocused && (
+                              <rect
+                                width="160"
+                                height="80"
+                                rx="8"
+                                fill="none"
+                                stroke="#ef4444"
+                                strokeWidth="2"
+                                strokeDasharray="5,5"
+                                className="animate-pulse"
+                              />
+                            )}
                             <text
                               x="80"
                               y="25"
@@ -648,14 +788,7 @@ export function ProvenanceGraph() {
                             )}
                             {node.attributions &&
                               node.attributions.length > 0 && (
-                                <circle
-                                  cx="145"
-                                  cy="15"
-                                  r="8"
-                                  fill="#3b82f6"
-                                  className="text-white"
-                                  style={{ fontSize: "8px" }}
-                                />
+                                <circle cx="145" cy="15" r="8" fill="#3b82f6" />
                               )}
                           </g>
                         );
@@ -711,6 +844,11 @@ export function ProvenanceGraph() {
                   <div>Zoom: {Math.round(zoom * 100)}%</div>
                   <div>Nodes: {nodes.length}</div>
                   <div>Edges: {edges.length}</div>
+                  {selectedResourceId && (
+                    <div className="text-blue-600 font-medium">
+                      Focused Mode
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -730,6 +868,14 @@ export function ProvenanceGraph() {
                       <Badge variant="outline">
                         {(selectedNode.data as Entity).type}
                       </Badge>
+                      {selectedNode.id === selectedResourceId && (
+                        <Badge
+                          variant="outline"
+                          className="bg-red-100 text-red-800"
+                        >
+                          Focused
+                        </Badge>
+                      )}
                     </div>
                     <div className="space-y-2 text-sm">
                       <div>
@@ -783,6 +929,23 @@ export function ProvenanceGraph() {
                               ))}
                             </div>
                           </div>
+                        </div>
+                      )}
+
+                    {selectedNode.type === "entity" &&
+                      (selectedNode.data as Entity).type === "resource" && (
+                        <div>
+                          <Separator className="my-2" />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() =>
+                              setSelectedResourceId(selectedNode.id)
+                            }
+                          >
+                            Focus on This Resource
+                          </Button>
                         </div>
                       )}
                   </div>
@@ -914,7 +1077,7 @@ export function ProvenanceGraph() {
               </div>
               <Separator />
               <div>
-                <h4 className="font-medium mb-2">Edge Types</h4>
+                <h4 className="font-medium mb-2">Special Indicators</h4>
                 <div className="space-y-1 text-sm">
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-0.5 bg-gray-500"></div>
@@ -923,6 +1086,10 @@ export function ProvenanceGraph() {
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-0.5 bg-green-600"></div>
                     <span>Output</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-red-500 border-dashed rounded"></div>
+                    <span>Focused Resource</span>
                   </div>
                 </div>
               </div>
@@ -954,6 +1121,17 @@ export function ProvenanceGraph() {
                 <span>Connections:</span>
                 <Badge variant="secondary">{edges.length}</Badge>
               </div>
+              {selectedResourceId && (
+                <div className="flex justify-between">
+                  <span>Focus Mode:</span>
+                  <Badge
+                    variant="outline"
+                    className="bg-blue-100 text-blue-800"
+                  >
+                    Active
+                  </Badge>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

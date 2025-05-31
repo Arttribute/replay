@@ -229,5 +229,19 @@
     ],
     "createdAt": "2025-05-31T13:44:09.107Z",
     "updatedAt": "2025-05-31T13:44:48.871Z"
+  },
+  "thread_Lm1uWHBojHt3UHD1Qirqw2fx": {
+    "id": "thread_Lm1uWHBojHt3UHD1Qirqw2fx",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T15:58:00.499Z",
+    "updatedAt": "2025-05-31T15:58:00.499Z"
+  },
+  "thread_6nfNaayuAj0o2AQzbtCq4PTl": {
+    "id": "thread_6nfNaayuAj0o2AQzbtCq4PTl",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T15:58:00.506Z",
+    "updatedAt": "2025-05-31T15:58:00.506Z"
   }
 }

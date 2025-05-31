@@ -40,5 +40,36 @@
       "toolUsed": "image_generation",
       "createdAt": "2025-05-31T12:43:02.672Z"
     }
+  },
+  {
+    "id": "resource:1748699118311-generated-image",
+    "type": "resource",
+    "metadata": {
+      "title": "Generated image: a cute cat sitting on a window...",
+      "format": "image",
+      "prompt": "a cute cat sitting on a windowsill, looking outside, with a sunny day in the background and flowers on the windowsill.",
+      "createdAt": "2025-05-31T13:45:18.311Z",
+      "url": "https://oaidalleapiprodscus.blob.core.windows.net/private/org-3rhNj9eXh69BEGDUnyk6L40m/user-bkDzTv4TPcTfTZmQPWNbA4No/img-1rCovxmlY0imrS9ZsaoGCGJB.png?st=2025-05-31T12%3A45%3A18Z&se=2025-05-31T14%3A45%3A18Z&sp=r&sv=2024-08-04&sr=b&rscd=inline&rsct=image/png&skoid=52f8f7b3-ca8d-4b21-9807-8b9df114d84c&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-31T01%3A24%3A41Z&ske=2025-06-01T01%3A24%3A41Z&sks=b&skv=2024-08-04&sig=OShh6nOAKvUW%2BNRoPjNhXpKqcrRMuFO%2B%2BK9CMI1Va9o%3D"
+    }
+  },
+  {
+    "id": "resource:1748699118325-tool-output",
+    "type": "resource",
+    "metadata": {
+      "title": "image_generation output",
+      "format": "json",
+      "toolUsed": "image_generation",
+      "createdAt": "2025-05-31T13:45:18.325Z"
+    }
+  },
+  {
+    "id": "agent:1748726461147",
+    "type": "ai",
+    "metadata": {
+      "name": "My new Agent",
+      "instructions": "You are a helpful assistant",
+      "assistantId": "asst_MTy5cEHsnKPxnws7l3wwnRzH",
+      "toolCount": 2
+    }
   }
 ]

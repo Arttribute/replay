@@ -54,5 +54,47 @@
       "toolUsed": "image_generation",
       "arguments": "{\"input\":\"A cute cat sitting on a windowsill looking outside on a sunny day\"}"
     }
+  },
+  {
+    "id": "activity:generate-1748699118313",
+    "type": "generate",
+    "timestamp": "2025-05-31T13:45:18.313Z",
+    "performedBy": "tool:dalle",
+    "inputs": [],
+    "outputs": [
+      "resource:1748699118311-generated-image"
+    ],
+    "metadata": {
+      "prompt": "a cute cat sitting on a windowsill, looking outside, with a sunny day in the background and flowers on the windowsill.",
+      "model": "dall-e-3"
+    }
+  },
+  {
+    "id": "activity:generate-1748699118325",
+    "type": "generate",
+    "timestamp": "2025-05-31T13:45:18.325Z",
+    "performedBy": "agent:1748690077917",
+    "inputs": [],
+    "outputs": [
+      "resource:1748699118325-tool-output"
+    ],
+    "metadata": {
+      "toolUsed": "image_generation",
+      "arguments": "{\"input\":\"a cute cat sitting on a windowsill, looking outside, with a sunny day in the background and flowers on the windowsill.\"}"
+    }
+  },
+  {
+    "id": "activity:generate-1748726461155",
+    "type": "generate",
+    "timestamp": "2025-05-31T21:21:01.155Z",
+    "performedBy": "human:system",
+    "inputs": [],
+    "outputs": [
+      "agent:1748726461147"
+    ],
+    "metadata": {
+      "task": "Create AI agent",
+      "agentName": "My new Agent"
+    }
   }
 ]

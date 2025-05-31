@@ -1,7 +1,7 @@
 [
   {
     "id": "agent:1748690077917",
-    "name": "test",
+    "name": "Agent One",
     "instructions": "test",
     "tools": [
       {
@@ -148,9 +148,9 @@
     "updatedAt": "2025-05-31T11:26:54.879Z"
   },
   {
-    "id": "agent:1748690837249",
-    "name": "yety another",
-    "instructions": "Do as instructed",
+    "id": "agent:1748726461147",
+    "name": "My new Agent",
+    "instructions": "You are a helpful assistant",
     "tools": [
       {
         "id": "text_generation",
@@ -197,46 +197,10 @@
             "input"
           ]
         }
-      },
-      {
-        "id": "text_to_speech",
-        "name": "Text to Speech",
-        "description": "Convert text to speech audio",
-        "endpoint": "/api/voice/tts",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "input": {
-              "type": "string",
-              "description": "Text to convert to speech"
-            }
-          },
-          "required": [
-            "input"
-          ]
-        }
-      },
-      {
-        "id": "speech_to_text",
-        "name": "Speech to Text",
-        "description": "Convert speech audio to text",
-        "endpoint": "/api/voice/whisper",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "base64Audio": {
-              "type": "string",
-              "description": "Base64 encoded audio data"
-            }
-          },
-          "required": [
-            "base64Audio"
-          ]
-        }
       }
     ],
-    "assistantId": "asst_Cl08bKIgEPKWui3TZEUdMTp2",
-    "createdAt": "2025-05-31T11:27:17.249Z",
-    "updatedAt": "2025-05-31T11:27:17.249Z"
+    "assistantId": "asst_MTy5cEHsnKPxnws7l3wwnRzH",
+    "createdAt": "2025-05-31T21:21:01.148Z",
+    "updatedAt": "2025-05-31T21:21:01.149Z"
   }
 ]

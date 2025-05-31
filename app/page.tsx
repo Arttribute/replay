@@ -14,6 +14,7 @@ import { ProvenanceGraph } from "@/components/main/provenance-graph";
 import { ActivityFeed } from "@/components/main/activity-feed";
 import { ResourceLibrary } from "@/components/main/resource-library";
 import { Bot, Network, Activity, FolderOpen } from "lucide-react";
+import AccountMenu from "@/components/account/account-menu";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("agents");
@@ -27,9 +28,7 @@ export default function HomePage() {
               <div className="bg-lime-300 w-36 h-6 -mb-6 rounded-lg"></div>
               <h2 className="font-semibold">Replay Protocol</h2>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Dynamic Multi-Agent Platform with Provenance Tracking
-            </div>
+            <AccountMenu />
           </div>
         </div>
       </header>

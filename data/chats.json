@@ -432,5 +432,96 @@
     ],
     "createdAt": "2025-05-31T21:21:12.847Z",
     "updatedAt": "2025-05-31T21:21:16.753Z"
+  },
+  "thread_RjD423vTbhCjMzibTtrRZBLW": {
+    "id": "thread_RjD423vTbhCjMzibTtrRZBLW",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T21:50:50.027Z",
+    "updatedAt": "2025-05-31T21:50:50.027Z"
+  },
+  "thread_V68BG0P28PKOSrxHL7Ozh2uO": {
+    "id": "thread_V68BG0P28PKOSrxHL7Ozh2uO",
+    "agentId": "agent:1748690814878",
+    "messages": [],
+    "createdAt": "2025-05-31T21:50:50.045Z",
+    "updatedAt": "2025-05-31T21:50:50.045Z"
+  },
+  "thread_Wws15CiqSPORLBbdmTOLvFxE": {
+    "id": "thread_Wws15CiqSPORLBbdmTOLvFxE",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T21:50:50.049Z",
+    "updatedAt": "2025-05-31T21:50:50.049Z"
+  },
+  "thread_5bFTj0U4tEAeRGlNscyD5W4G": {
+    "id": "thread_5bFTj0U4tEAeRGlNscyD5W4G",
+    "agentId": "agent:1748690814878",
+    "messages": [],
+    "createdAt": "2025-05-31T21:50:50.052Z",
+    "updatedAt": "2025-05-31T21:50:50.052Z"
+  },
+  "thread_a8ROBgHfvmJvPJG4c42idDVA": {
+    "id": "thread_a8ROBgHfvmJvPJG4c42idDVA",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T21:51:01.807Z",
+    "updatedAt": "2025-05-31T21:51:01.807Z"
+  },
+  "thread_17CiYIk9ugIzobVMVQOrr6Nf": {
+    "id": "thread_17CiYIk9ugIzobVMVQOrr6Nf",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T21:51:01.884Z",
+    "updatedAt": "2025-05-31T21:51:01.884Z"
+  },
+  "thread_Off7FsG34YaNuVqluAnfGySf": {
+    "id": "thread_Off7FsG34YaNuVqluAnfGySf",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T21:51:38.241Z",
+    "updatedAt": "2025-05-31T21:51:38.241Z"
+  },
+  "thread_UmOyKrgZO1NljrytObHHRhKj": {
+    "id": "thread_UmOyKrgZO1NljrytObHHRhKj",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T21:51:38.244Z",
+    "updatedAt": "2025-05-31T21:51:38.244Z"
+  },
+  "thread_hTd5SONdjxJzdHGLDOzuCnuY": {
+    "id": "thread_hTd5SONdjxJzdHGLDOzuCnuY",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T21:51:38.248Z",
+    "updatedAt": "2025-05-31T21:51:38.248Z"
+  },
+  "thread_NHpThsbpOKclC5P3CeEfBGoU": {
+    "id": "thread_NHpThsbpOKclC5P3CeEfBGoU",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T21:51:38.248Z",
+    "updatedAt": "2025-05-31T21:51:38.248Z"
+  },
+  "thread_y9TfpLHTq6ZfNZoy83alV2Z0": {
+    "id": "thread_y9TfpLHTq6ZfNZoy83alV2Z0",
+    "agentId": "agent:1748690077917",
+    "messages": [],
+    "createdAt": "2025-05-31T21:57:59.571Z",
+    "updatedAt": "2025-05-31T21:57:59.571Z"
+  },
+  "thread_7o8WJaWDN3Oap8eRU7n0z9Yb": {
+    "id": "thread_7o8WJaWDN3Oap8eRU7n0z9Yb",
+    "agentId": "agent:1748690077917",
+    "messages": [
+      {
+        "id": "msg_1748728686339",
+        "role": "user",
+        "content": "Hello",
+        "timestamp": "2025-05-31T21:58:06.339Z"
+      }
+    ],
+    "createdAt": "2025-05-31T21:57:59.577Z",
+    "updatedAt": "2025-05-31T21:58:06.339Z"
   }
 }

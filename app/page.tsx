@@ -21,11 +21,11 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
-        <div className="container mx-auto px-4 py-4">
+        <div className=" mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Bot className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold">AI Agent System</h1>
+            <div className="">
+              <div className="bg-lime-300 w-36 h-6 -mb-6 rounded-lg"></div>
+              <h2 className="font-semibold">Replay Protocol</h2>
             </div>
             <div className="text-sm text-muted-foreground">
               Dynamic Multi-Agent Platform with Provenance Tracking
@@ -40,7 +40,7 @@ export default function HomePage() {
           onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-[50vw] grid-cols-4 border border-gray-500">
             <TabsTrigger value="agents" className="flex items-center space-x-2">
               <Bot className="h-4 w-4" />
               <span>Agents</span>
@@ -69,9 +69,14 @@ export default function HomePage() {
           </TabsList>
 
           <TabsContent value="agents" className="space-y-6">
-            <Card>
+            <Card className="border border-gray-500">
               <CardHeader>
-                <CardTitle>Agent Management</CardTitle>
+                <CardTitle>
+                  <div className="">
+                    <div className="bg-sky-200 w-36 h-5 -mb-5 rounded-lg"></div>
+                    <h2 className=" font-semibold">Agent Management</h2>
+                  </div>
+                </CardTitle>
                 <CardDescription>
                   Create and manage AI agents with custom instructions and
                   dynamic tool capabilities
@@ -84,9 +89,14 @@ export default function HomePage() {
           </TabsContent>
 
           <TabsContent value="provenance" className="space-y-6">
-            <Card>
+            <Card className="border border-gray-500">
               <CardHeader>
-                <CardTitle>Provenance Graph</CardTitle>
+                <CardTitle>
+                  <div className="">
+                    <div className="bg-sky-200 w-36 h-5 -mb-5 rounded-lg"></div>
+                    <h2 className=" font-semibold">Provenance Graph</h2>
+                  </div>
+                </CardTitle>
                 <CardDescription>
                   Visualize the creation and transformation history of all
                   resources
@@ -99,9 +109,14 @@ export default function HomePage() {
           </TabsContent>
 
           <TabsContent value="activity" className="space-y-6">
-            <Card>
+            <Card className="border border-gray-500">
               <CardHeader>
-                <CardTitle>Activity Feed</CardTitle>
+                <CardTitle>
+                  <div className="">
+                    <div className="bg-sky-200 w-36 h-5 -mb-5 rounded-lg"></div>
+                    <h2 className=" font-semibold">Activity Feed</h2>
+                  </div>
+                </CardTitle>
                 <CardDescription>
                   Real-time feed of all agent activities and interactions
                 </CardDescription>
@@ -113,9 +128,14 @@ export default function HomePage() {
           </TabsContent>
 
           <TabsContent value="resources" className="space-y-6">
-            <Card>
+            <Card className="border border-gray-500">
               <CardHeader>
-                <CardTitle>Resource Library</CardTitle>
+                <CardTitle>
+                  <div className="">
+                    <div className="bg-sky-200 w-36 h-5 -mb-5 rounded-lg"></div>
+                    <h2 className=" font-semibold">Resource Graph </h2>
+                  </div>
+                </CardTitle>
                 <CardDescription>
                   Browse and manage all generated resources with attribution
                   details

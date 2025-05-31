@@ -284,7 +284,7 @@ export function AgentManager() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {agents.map((agent) => (
-          <Card key={agent.id}>
+          <Card key={agent.id} className="border-gray-500">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -359,7 +359,7 @@ export function AgentManager() {
       )}
 
       <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
-        <DialogContent className="max-w-6xl h-[80vh]">
+        <DialogContent className="w-[60vw] h-[80vh]">
           <DialogHeader>
             <DialogTitle>Chat with {selectedAgent?.name}</DialogTitle>
             <DialogDescription>
@@ -367,7 +367,7 @@ export function AgentManager() {
             </DialogDescription>
           </DialogHeader>
           {selectedAgent && (
-            <ScrollArea className="h-90">
+            <ScrollArea className="w-[60vw] h-90">
               <AgentChat
                 agent={selectedAgent}
                 onClose={() => setIsChatOpen(false)}

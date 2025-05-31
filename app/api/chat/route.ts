@@ -11,9 +11,26 @@ export async function POST(request: Request) {
   try {
     const { threadId, agentId, message } = await request.json();
 
+    console.log("Chat request for agent:", agentId);
+
     const agent = agentStorage.getById(agentId);
+    console.log("Agent found:", agent ? agent.name : "Not found");
+
     if (!agent) {
+      // List all available agents for debugging
+      const allAgents = agentStorage.getAll();
+      console.log(
+        "Available agents:",
+        allAgents.map((a) => ({ id: a.id, name: a.name }))
+      );
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    }
+
+    if (!agent.assistantId) {
+      return NextResponse.json(
+        { error: "Agent has no associated OpenAI assistant" },
+        { status: 400 }
+      );
     }
 
     // Add message to thread
@@ -29,7 +46,7 @@ export async function POST(request: Request) {
         try {
           // Start the run with streaming
           const runStream = openai.beta.threads.runs.stream(threadId, {
-            assistant_id: agent.assistantId || "",
+            assistant_id: agent.assistantId!,
           });
 
           for await (const event of runStream) {
@@ -38,11 +55,9 @@ export async function POST(request: Request) {
               if (
                 delta.content &&
                 delta.content[0] &&
-                delta.content[0].type === "text" &&
-                delta.content[0].text &&
-                delta.content[0].text.value
+                delta.content[0].type === "text"
               ) {
-                const content = delta.content[0].text.value;
+                const content = delta.content[0].text;
                 controller.enqueue(
                   encoder.encode(
                     `data: ${JSON.stringify({
@@ -125,11 +140,11 @@ export async function POST(request: Request) {
                     },
                   });
                 }
-
                 // Submit tool outputs
-                //await openai.beta.threads.runs.submitToolOutputs(threadId, event.data.id, {
-                //  tool_outputs: toolOutputs,
-                //})
+                await openai.beta.threads.runs.submitToolOutputs(threadId, {
+                  thread_id: threadId,
+                  tool_outputs: toolOutputs,
+                });
               }
             }
           }
@@ -150,6 +165,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error: any) {
+    console.error("Chat error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

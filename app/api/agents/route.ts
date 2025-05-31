@@ -9,7 +9,13 @@ const openai = new OpenAI({
 });
 
 export async function GET() {
-  return NextResponse.json(agentStorage.getAll());
+  try {
+    const agents = agentStorage.getAll();
+    return NextResponse.json(agents);
+  } catch (error: any) {
+    console.error("Error getting agents:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -23,6 +29,8 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log("Creating agent with tools:", tools);
+
     // Create OpenAI Assistant with proper tool formatting
     const assistantTools = tools.map((tool: Tool) => ({
       type: "function" as const,
@@ -33,12 +41,16 @@ export async function POST(request: Request) {
       },
     }));
 
+    console.log("Creating OpenAI assistant with tools:", assistantTools);
+
     const assistant = await openai.beta.assistants.create({
       name,
       instructions,
       model: "gpt-4o",
       tools: assistantTools,
     });
+
+    console.log("OpenAI assistant created:", assistant.id);
 
     const agent: Agent = {
       id: `agent:${Date.now()}`,
@@ -51,6 +63,11 @@ export async function POST(request: Request) {
     };
 
     agentStorage.add(agent);
+    console.log("Agent stored:", agent.id);
+
+    // Verify agent was stored
+    const storedAgent = agentStorage.getById(agent.id);
+    console.log("Agent verification:", storedAgent ? "Found" : "Not found");
 
     // Track agent creation in provenance
     provenanceTracker.addEntity({

@@ -1,35 +1,69 @@
 import type { Agent } from "@/types/agent";
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
+import { join } from "path";
 
-// Simple in-memory storage - replace with database in production
+const DATA_DIR = join(process.cwd(), "data");
+const AGENTS_FILE = join(DATA_DIR, "agents.json");
+
+// Ensure data directory exists
+if (!existsSync(DATA_DIR)) {
+  mkdirSync(DATA_DIR, { recursive: true });
+}
+
 class AgentStorage {
-  private agents: Agent[] = [];
+  private loadAgents(): Agent[] {
+    try {
+      if (existsSync(AGENTS_FILE)) {
+        const data = readFileSync(AGENTS_FILE, "utf-8");
+        return JSON.parse(data);
+      }
+    } catch (error) {
+      console.error("Error loading agents:", error);
+    }
+    return [];
+  }
+
+  private saveAgents(agents: Agent[]): void {
+    try {
+      writeFileSync(AGENTS_FILE, JSON.stringify(agents, null, 2));
+    } catch (error) {
+      console.error("Error saving agents:", error);
+    }
+  }
 
   getAll(): Agent[] {
-    return this.agents;
+    return this.loadAgents();
   }
 
   getById(id: string): Agent | undefined {
-    return this.agents.find((agent) => agent.id === id);
+    const agents = this.loadAgents();
+    return agents.find((agent) => agent.id === id);
   }
 
   add(agent: Agent): void {
-    this.agents.push(agent);
+    const agents = this.loadAgents();
+    agents.push(agent);
+    this.saveAgents(agents);
   }
 
   remove(id: string): boolean {
-    const index = this.agents.findIndex((agent) => agent.id === id);
+    const agents = this.loadAgents();
+    const index = agents.findIndex((agent) => agent.id === id);
     if (index !== -1) {
-      this.agents.splice(index, 1);
+      agents.splice(index, 1);
+      this.saveAgents(agents);
       return true;
     }
     return false;
   }
 
   update(id: string, updates: Partial<Agent>): Agent | null {
-    const index = this.agents.findIndex((agent) => agent.id === id);
+    const agents = this.loadAgents();
+    const index = agents.findIndex((agent) => agent.id === id);
     if (index !== -1) {
-      this.agents[index] = { ...this.agents[index], ...updates };
-      return this.agents[index];
+      agents[index] = { ...agents[index], ...updates };
+      this.saveAgents(agents);
+      return agents[index];
     }
     return null;
   }

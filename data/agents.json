@@ -1,0 +1,58 @@
+[
+  {
+    "id": "agent:1748690077917",
+    "name": "test",
+    "instructions": "test",
+    "tools": [
+      {
+        "id": "text_generation",
+        "name": "Text Generation",
+        "description": "Generate text using GPT models",
+        "endpoint": "/api/llm/gpt",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "instruction": {
+              "type": "string",
+              "description": "The instruction for text generation"
+            },
+            "inputs": {
+              "type": "string",
+              "description": "Input text"
+            },
+            "outputs": {
+              "type": "string",
+              "description": "Expected output format"
+            }
+          },
+          "required": [
+            "instruction",
+            "inputs",
+            "outputs"
+          ]
+        }
+      },
+      {
+        "id": "image_generation",
+        "name": "Image Generation",
+        "description": "Generate images using DALL-E",
+        "endpoint": "/api/imagegen/dalle",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "string",
+              "description": "Image description prompt"
+            }
+          },
+          "required": [
+            "input"
+          ]
+        }
+      }
+    ],
+    "assistantId": "asst_MDlV4KcyBDraDcUywEGnpbtt",
+    "createdAt": "2025-05-31T11:14:37.917Z",
+    "updatedAt": "2025-05-31T11:14:37.917Z"
+  }
+]

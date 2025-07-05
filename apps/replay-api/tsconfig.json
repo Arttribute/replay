@@ -1,16 +1,26 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "baseUrl": "./",
     "strict": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
+    "paths": {
+      "#/*": ["./*"]
+    },
+    "outDir": "./dist",
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
-    "outDir": "./dist"
+    "plugins": [{ "transform": "typia/lib/transform" }]
   },
-  "exclude": ["node_modules"]
+  "tsc-alias": {
+    "resolveFullPaths": true
+  }
+  // "ts-node": {
+  //   "swc": true,
+  //   "require": ["tsconfig-paths/register"]
+  // }
 }

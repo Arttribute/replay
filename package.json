@@ -9,5 +9,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.12.4"
+  "packageManager": "pnpm@10.12.4",
+  "dependencies": {
+    "sharp": "^0.34.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "@xenova/transformers>sharp": "0.33.5"
+    }
+  }
 }

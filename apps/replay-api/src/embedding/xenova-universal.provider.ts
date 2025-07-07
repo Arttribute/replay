@@ -3,32 +3,51 @@ import {
   AutoTokenizer,
   CLIPTextModelWithProjection,
 } from "@xenova/transformers";
-//import { WaveFile } from "wavefile";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { writeFile, unlink } from "node:fs/promises";
 import type { EmbeddingProvider } from "./provider.ts";
 
 type Vec = number[];
 
-/* -- helper: detect mime from 1-2 byte signatures (minimal) -------------- */
-function sniffMime(b64orUrl: string): string {
-  if (b64orUrl.startsWith("data:")) {
-    const m = b64orUrl.slice(5, b64orUrl.indexOf(";"));
-    return m || "application/octet-stream";
-  }
-  if (b64orUrl.startsWith("http")) return "application/octet-stream";
-  return "application/octet-stream";
+/* ---------- helpers ---------- */
+function mimeToExt(mime: string): string {
+  if (mime.includes("png")) return ".png";
+  if (mime.includes("jpeg")) return ".jpg";
+  if (mime.includes("jpg")) return ".jpg";
+  if (mime.includes("webp")) return ".webp";
+  if (mime.includes("gif")) return ".gif";
+  return ".bin";
 }
 
+/** data:… → {bytes, mime}  |  http(s) → {bytes, mime=""} */
+async function toBytes(src: string): Promise<{ bytes: Buffer; mime: string }> {
+  if (src.startsWith("data:")) {
+    const mid = src.indexOf(",");
+    const meta = src.slice(5, mid); // e.g. image/png;base64
+    const mime = meta.split(";")[0] || "application/octet-stream";
+    const buf = Buffer.from(src.slice(mid + 1), "base64");
+    return { bytes: buf, mime };
+  }
+  // http / https
+  const res = await fetch(src);
+  if (!res.ok) throw new Error(`fetch ${src}: ${res.status}`);
+  const mime = res.headers.get("content-type") ?? "application/octet-stream";
+  const buf = Buffer.from(await res.arrayBuffer());
+  return { bytes: buf, mime };
+}
+
+/* ===================================================================== */
+/*                           Provider implementation                     */
+/* ===================================================================== */
 export class XenovaUniversalProvider implements EmbeddingProvider {
   private readonly vision = "Xenova/clip-vit-base-patch16";
-  private readonly audio = "Xenova/larger_clap_general";
 
   private textCache?: { tok: any; mdl: any };
   private imgPipe?: any;
-  private vidPipe?: any;
-  private audCache?: { proc: any; mdl: any };
 
-  /* ───────── LOADERS ───────── */
-  private async loadText() {
+  /* ---------- lazy loaders ---------- */
+  private async lText() {
     if (!this.textCache) {
       this.textCache = {
         tok: await AutoTokenizer.from_pretrained(this.vision),
@@ -37,35 +56,15 @@ export class XenovaUniversalProvider implements EmbeddingProvider {
     }
     return this.textCache;
   }
-  private async loadImg() {
+  private async lImg() {
     if (!this.imgPipe)
       this.imgPipe = await pipeline("image-feature-extraction", this.vision);
     return this.imgPipe;
   }
-  private async loadVid() {
-    if (!this.vidPipe)
-      this.vidPipe = await pipeline(
-        "video-feature-extraction" as any,
-        this.vision
-      );
-    return this.vidPipe;
-  }
-  private async loadAud() {
-    if (!this.audCache) {
-      const { AutoProcessor, ClapAudioModelWithProjection } = await import(
-        "@xenova/transformers"
-      );
-      this.audCache = {
-        proc: await AutoProcessor.from_pretrained(this.audio),
-        mdl: await ClapAudioModelWithProjection.from_pretrained(this.audio),
-      };
-    }
-    return this.audCache;
-  }
 
-  /* ───────── TEXT ───────── */
+  /* ---------- TEXT ---------- */
   async encodeText(text: string): Promise<Vec> {
-    const { tok, mdl } = await this.loadText();
+    const { tok, mdl } = await this.lText();
     const inp = tok([text], { padding: true, truncation: true });
     const { text_embeds } = await mdl(inp, {
       pooling: "mean",
@@ -74,41 +73,34 @@ export class XenovaUniversalProvider implements EmbeddingProvider {
     return Array.from(text_embeds.data as Float32Array);
   }
 
-  /* ───────── IMAGE ───────── */
+  /* ---------- IMAGE ---------- */
   async encodeImage(src: string): Promise<Vec> {
-    // src must already be data: or http/https/… URL
-    const out = await (
-      await this.loadImg()
-    )(src, {
-      pooling: "mean",
-      normalize: true,
-    });
-    return Array.from(out.data as Float32Array);
+    // 1. Get bytes + mime
+    const { bytes, mime } = await toBytes(src);
+
+    // 2. Write to a temporary file
+    const tmpPath = `${tmpdir()}/${randomUUID()}${mimeToExt(mime)}`;
+    await writeFile(tmpPath, bytes);
+
+    // 3. Run pipeline with *file path string* (works on all platforms)
+    try {
+      const out = await (
+        await this.lImg()
+      )(tmpPath, {
+        pooling: "mean",
+        normalize: true,
+      });
+      return Array.from(out.data as Float32Array);
+    } finally {
+      await unlink(tmpPath).catch(() => {});
+    }
   }
 
-  /* ───────── VIDEO ───────── */
-  async encodeVideo(src: string): Promise<Vec> {
-    const out = await (
-      await this.loadVid()
-    )(src, {
-      pooling: "mean",
-      normalize: true,
-    });
-    return Array.from(out.data as Float32Array);
+  /* ---------- stubs for other modalities ---------- */
+  async encodeVideo(_: string): Promise<Vec> {
+    throw new Error("Video embedding not yet implemented");
   }
-
-  /* ───────── AUDIO ───────── */
-  //   async encodeAudio(src: string): Promise<Vec> {
-  //     const { proc, mdl } = await this.loadAud();
-
-  //     const bytes = new Uint8Array(await (await fetch(src)).arrayBuffer());
-  //     const wav   = new WaveFile(Buffer.from(bytes));
-  //     wav.toBitDepth("32f");
-  //     wav.toSampleRate(48000);
-  //     const mono  = (wav.getSamples() as Float32Array[])[0];
-
-  //     const inputs        = await proc(mono);
-  //     const { audio_embeds } = await mdl(inputs, { pooling: "mean", normalize: true });
-  //     return Array.from(audio_embeds.data as Float32Array);
-  //   }
+  async encodeAudio(_: string): Promise<Vec> {
+    throw new Error("Audio embedding not yet implemented");
+  }
 }

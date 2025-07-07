@@ -10,10 +10,13 @@ import { sql } from "drizzle-orm";
 import { vector } from "drizzle-orm/pg-core";
 
 export const entity = pgTable("entity", {
-  entityId: text("id").primaryKey(),
+  entityId: text("entity_id")
+    .primaryKey()
+    .default(sql`uuid_generate_v4()`),
   role: text("role").notNull(),
   name: text("name"),
   wallet: text("wallet"),
+  publicKey: text("public_key"),
   metadata: jsonb("metadata"),
   extensions: jsonb("extensions"),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -22,7 +25,9 @@ export const entity = pgTable("entity", {
 });
 
 export const resource = pgTable("resource", {
-  cid: text("cid").primaryKey(),
+  cid: text("cid")
+    .primaryKey()
+    .default(sql`uuid_generate_v4()`),
   size: integer("size").notNull(),
   algorithm: text("algorithm").notNull(),
   type: text("type").notNull(),
@@ -35,10 +40,12 @@ export const resource = pgTable("resource", {
 });
 
 export const action = pgTable("action", {
-  actionId: text("id").primaryKey(),
+  actionId: text("action_id")
+    .primaryKey()
+    .default(sql`uuid_generate_v4()`),
   type: text("type").notNull(),
   performedBy: text("performed_by").notNull(),
-  timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
+  timestamp: timestamp("performed_at", { withTimezone: true }).notNull(),
   inputCids: jsonb("input_cids").$type<string[]>(),
   outputCids: jsonb("output_cids").$type<string[]>(),
   proof: text("proof"),
@@ -46,7 +53,9 @@ export const action = pgTable("action", {
 });
 
 export const attribution = pgTable("attribution", {
-  id: text("id").primaryKey(),
+  id: text("attribution_id")
+    .primaryKey()
+    .default(sql`uuid_generate_v4()`),
   resourceCid: text("resource_cid").notNull(),
   entityId: text("entity_id").notNull(),
   role: text("role").notNull(),

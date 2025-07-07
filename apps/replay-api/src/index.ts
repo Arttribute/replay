@@ -1,6 +1,9 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { upsertEntity } from "./services/entity.service.js";
+import { createActivity } from "./services/activity.service";
+import { ActivityPayload } from "./services/activity.service";
 import { createResource } from "./services/resource.service";
 import { EmbeddingService } from "./embedding/service";
 import { ProvenanceBundle } from "@arttribute/eaa-types";
@@ -14,6 +17,12 @@ app.use("*", cors());
 
 /* health */
 app.get("/", (c) => c.text("Replay API up 🚀"));
+
+app.post("/entity", async (c) => {
+  const body = await c.req.json();
+  await upsertEntity(body);
+  return c.json({ ok: true, id: body.id }, 201);
+});
 
 /* POST /resource (multipart OR raw bytes) */
 app.post("/resource", async (c) => {
@@ -34,6 +43,35 @@ app.post("/resource", async (c) => {
     mime: "",
   });
   return c.json(res, 201);
+});
+
+app.post("/activity", async (c) => {
+  const form = await c.req.parseBody();
+
+  if (!(form.file instanceof File))
+    return c.json({ error: "file part (name=file) required" }, 400);
+  if (typeof form.json !== "string")
+    return c.json({ error: "json part (name=json) required" }, 400);
+
+  /* runtime validation with EAA zod */
+  const parsed = ActivityPayload.safeParse(JSON.parse(form.json));
+  if (!parsed.success)
+    return c.json(
+      { error: "invalid json payload", details: parsed.error.format() },
+      422
+    );
+
+  const bytes = new Uint8Array(await form.file.arrayBuffer());
+
+  const result = await createActivity({
+    fileBytes: bytes,
+    filename: form.file.name,
+    mime: form.file.type || "application/octet-stream",
+    entity: parsed.data.entity,
+    action: parsed.data.action,
+  });
+
+  return c.json(result, 201);
 });
 
 /* GET /similar/:cid */

@@ -2,42 +2,34 @@ import { pinBytes } from "../ipfs/pinata";
 import { EmbeddingService } from "../embedding/service";
 import { db } from "../../db/client";
 import { resource } from "../../db/schema";
+import { toDataURI } from "../utils";
 
 const embedder = new EmbeddingService();
 
-/** Helper: bytes → data URI */
-function toDataURI(bytes: Uint8Array, mime = "application/octet-stream") {
-  return `data:${mime};base64,${Buffer.from(bytes).toString("base64")}`;
-}
-
-export async function createResource(opts: {
-  data: Uint8Array; // raw bytes from upload
+export async function insertResource(opts: {
+  bytes: Uint8Array;
+  mime: string;
   filename: string;
-  mime: string; // e.g. "image/png"
-  type: "text" | "image" | "audio" | "video";
-  createdBy: string;
-  rootAction: string;
+  creator: string;
+  actionId: string;
+  kind: "image" | "text" | "audio" | "video";
 }) {
-  /* 1️⃣  Pin to IPFS */
-  const { cid, size } = await pinBytes(opts.data, opts.filename);
+  const { cid, size } = await pinBytes(opts.bytes, opts.filename, opts.mime);
+  const vec = await embedder.vector(
+    opts.kind,
+    toDataURI(opts.bytes, opts.mime)
+  );
 
-  /* 2️⃣  Build a base-64 data URI */
-  const dataUri = toDataURI(opts.data, opts.mime);
-
-  /* 3️⃣  Vector */
-  const vec = await embedder.vector(opts.type, dataUri);
-
-  /* 4️⃣  Insert with embedding */
   await db.insert(resource).values({
     cid,
     size,
     algorithm: "sha256",
-    type: opts.type,
+    type: opts.kind,
     locations: [{ uri: `ipfs://${cid}`, provider: "ipfs", verified: true }],
-    createdBy: opts.createdBy,
-    rootAction: opts.rootAction,
+    createdBy: opts.creator,
+    rootAction: opts.actionId,
     embedding: vec,
   });
 
-  return { cid, size };
+  return cid;
 }

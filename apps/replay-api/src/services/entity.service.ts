@@ -2,24 +2,22 @@ import { db } from "../../db/client";
 import { entity } from "../../db/schema";
 import { v4 as uuidv4 } from "uuid";
 
-export async function upsertEntity(body: {
+export async function upsertEntity(props: {
   role: string;
   name?: string;
   wallet?: string;
   publicKey?: string;
-  metadata?: Record<string, any>;
-  extensions?: Record<string, any>;
 }) {
   const id = uuidv4();
-  await db.insert(entity).values({
-    entityId: id,
-    role: body.role,
-    name: body.name ?? null,
-    wallet: body.wallet ?? null,
-    publicKey: body.publicKey ?? null,
-    metadata: body.metadata ?? null,
-    extensions: body.extensions ?? null,
-  });
-
+  await db
+    .insert(entity)
+    .values({
+      entityId: id,
+      role: props.role,
+      name: props.name ?? null,
+      wallet: props.wallet ?? null,
+      publicKey: props.publicKey ?? null,
+    })
+    .onConflictDoNothing();
   return id;
 }

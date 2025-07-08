@@ -45,9 +45,10 @@ export const action = pgTable("action", {
     .default(sql`uuid_generate_v4()`),
   type: text("type").notNull(),
   performedBy: text("performed_by").notNull(),
-  timestamp: timestamp("performed_at", { withTimezone: true }).notNull(),
+  timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
   inputCids: jsonb("input_cids").$type<string[]>(),
   outputCids: jsonb("output_cids").$type<string[]>(),
+  toolUsed: text("tool_used"),
   proof: text("proof"),
   extensions: jsonb("extensions"),
 });

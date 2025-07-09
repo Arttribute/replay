@@ -1,6 +1,6 @@
 steps:
   - name: node
-    dir: './apps/liaison-api'
+    dir: './apps/replay-api'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -9,7 +9,7 @@ steps:
         pnpm install
         pnpm build
   - name: 'gcr.io/cloud-builders/docker'
-    dir: './apps/liaison-api'
+    dir: './apps/replay-api'
     args:
       [
         'build',

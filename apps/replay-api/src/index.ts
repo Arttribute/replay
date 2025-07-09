@@ -7,6 +7,8 @@ import entity from "./handlers/entity";
 import activity from "./handlers/activity";
 import bundle from "./handlers/bundle";
 import similar from "./handlers/similar";
+import { provenanceRoute } from "./handlers/provenance";
+import { graphRoute } from "./handlers/graph";
 
 const app = new Hono();
 app.use("*", cors());
@@ -16,6 +18,8 @@ app.route("/", entity);
 app.route("/", activity);
 app.route("/", bundle);
 app.route("/", similar);
+app.route("/", provenanceRoute);
+app.route("/", graphRoute);
 
 serve({ fetch: app.fetch, port: 3000 }, ({ port }) =>
   console.log(`Replay API 🚀  http://localhost:${port}`)

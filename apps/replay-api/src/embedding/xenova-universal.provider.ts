@@ -2,14 +2,21 @@ import {
   pipeline,
   AutoTokenizer,
   CLIPTextModelWithProjection,
+  AutoProcessor,
+  ClapAudioModelWithProjection,
 } from "@xenova/transformers";
+
 import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
-import { writeFile, unlink } from "node:fs/promises";
-import type { EmbeddingProvider } from "./provider.ts";
+import { join } from "node:path";
+import { readFile, writeFile, unlink } from "node:fs/promises";
+import ffmpeg from "fluent-ffmpeg";
+import WavefileMod from "wavefile";
+
+import type { EmbeddingProvider } from "./provider";
 
 type Vec = number[];
-
+const WaveFile = WavefileMod.WaveFile;
 /* ---------- helpers ---------- */
 function mimeToExt(mime: string): string {
   if (mime.includes("png")) return ".png";
@@ -17,6 +24,9 @@ function mimeToExt(mime: string): string {
   if (mime.includes("jpg")) return ".jpg";
   if (mime.includes("webp")) return ".webp";
   if (mime.includes("gif")) return ".gif";
+  if (mime.includes("mp4")) return ".mp4";
+  if (mime.includes("mp3")) return ".mp3";
+  if (mime.includes("wav")) return ".wav";
   return ".bin";
 }
 
@@ -46,6 +56,10 @@ export class XenovaUniversalProvider implements EmbeddingProvider {
   private textCache?: { tok: any; mdl: any };
   private imgPipe?: any;
 
+  /* CLAP for audio ----------------------------------------------- */
+  private clapProcessor?: any;
+  private clapModel?: any;
+
   /* ---------- lazy loaders ---------- */
   private async lText() {
     if (!this.textCache) {
@@ -62,6 +76,17 @@ export class XenovaUniversalProvider implements EmbeddingProvider {
     return this.imgPipe;
   }
 
+  private async lClap() {
+    if (!this.clapProcessor) {
+      this.clapProcessor = await AutoProcessor.from_pretrained(
+        "Xenova/larger_clap_general"
+      );
+      this.clapModel = await ClapAudioModelWithProjection.from_pretrained(
+        "Xenova/larger_clap_general"
+      );
+    }
+    return { proc: this.clapProcessor, mdl: this.clapModel };
+  }
   /* ---------- TEXT ---------- */
   async encodeText(text: string): Promise<Vec> {
     const { tok, mdl } = await this.lText();
@@ -90,17 +115,58 @@ export class XenovaUniversalProvider implements EmbeddingProvider {
         pooling: "mean",
         normalize: true,
       });
+      console.log("Image embedding output:", out);
       return Array.from(out.data as Float32Array);
     } finally {
       await unlink(tmpPath).catch(() => {});
     }
   }
 
-  /* ---------- stubs for other modalities ---------- */
+  async encodeAudio(src: string): Promise<Vec> {
+    const { bytes, mime } = await toBytes(src);
+    const base = join(tmpdir(), randomUUID());
+    const inPath = base + mimeToExt(mime);
+    await writeFile(inPath, bytes);
+
+    /* always end up with mono 48-kHz WAV for CLAP */
+    const wavPath = mime.includes("wav") ? inPath : `${base}.wav`;
+    if (!mime.includes("wav")) {
+      await new Promise<void>((res, rej) =>
+        ffmpeg(inPath)
+          .audioChannels(1)
+          .audioFrequency(48_000)
+          .audioCodec("pcm_s16le")
+          .format("wav")
+          .on("end", () => res())
+          .on("error", rej)
+          .save(wavPath)
+      );
+    }
+
+    try {
+      /* decode WAV → Float32Array */
+      const wav = new WaveFile(await readFile(wavPath));
+      wav.toBitDepth("32f");
+      wav.toSampleRate(48_000);
+      const samples = wav.getSamples();
+      const pcm = new Float32Array(samples as Float64Array); // mono
+
+      /* CLAP embedding */
+      const { proc, mdl } = await this.lClap();
+      const inputs = await proc(pcm); // handles padding etc.
+      const { audio_embeds } = await mdl(inputs, {
+        pooling: "mean",
+        normalize: true,
+      });
+      console.log("Audio embedding output:", audio_embeds);
+      return Array.from(audio_embeds.data as Float32Array);
+    } finally {
+      unlink(inPath).catch(() => {});
+      if (wavPath !== inPath) unlink(wavPath).catch(() => {});
+    }
+  }
+
   async encodeVideo(_: string): Promise<Vec> {
     throw new Error("Video embedding not yet implemented");
-  }
-  async encodeAudio(_: string): Promise<Vec> {
-    throw new Error("Audio embedding not yet implemented");
   }
 }

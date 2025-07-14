@@ -65,7 +65,15 @@ export async function createActivity(file: File, body: unknown) {
 
     /* 2️⃣  Pin & embed ---------------------------------------------------- */
     const { cid, size } = await pinBytes(bytes, file.name, mime);
-    const vec = await embedder.vector("image", toDataURI(bytes, mime));
+    const fileType = mime.startsWith("image/")
+      ? "image"
+      : mime.startsWith("audio/")
+      ? "audio"
+      : mime.startsWith("video/")
+      ? "video"
+      : "text";
+    console.log("Embedding file type:", fileType);
+    const vec = await embedder.vector(fileType, toDataURI(bytes, mime));
 
     /* 3️⃣  Action row ----------------------------------------------------- */
     const [a] = await tx
@@ -88,7 +96,7 @@ export async function createActivity(file: File, body: unknown) {
       cid,
       size,
       algorithm: "sha256",
-      type: "image", // <-- detect real MIME if you like
+      type: fileType,
       locations: [{ uri: `ipfs://${cid}`, provider: "ipfs", verified: true }],
       createdBy: entityId,
       rootAction: actionId,

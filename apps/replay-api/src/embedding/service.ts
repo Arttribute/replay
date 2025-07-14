@@ -16,7 +16,8 @@ export class EmbeddingService {
         return this.p.encodeText(dataUriOrUrl);
       case "image":
         return this.p.encodeImage(dataUriOrUrl);
-      //case "audio": return this.p.encodeAudio(dataUriOrUrl);
+      case "audio":
+        return this.p.encodeAudio(dataUriOrUrl);
       case "video":
         return this.p.encodeVideo(dataUriOrUrl);
     }

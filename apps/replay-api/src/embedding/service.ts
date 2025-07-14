@@ -2,6 +2,7 @@ import { XenovaUniversalProvider } from "./xenova-universal.provider";
 import { db } from "../../db/client";
 import { resource } from "../../db/schema";
 import { sql } from "drizzle-orm";
+import { vecLiteral } from "../utils";
 
 export class EmbeddingService {
   constructor(private p = new XenovaUniversalProvider()) {}
@@ -45,5 +46,33 @@ export class EmbeddingService {
     if (best.score >= high) return { verdict: "auto", matches: rows };
     if (best.score >= low) return { verdict: "review", matches: rows };
     return { verdict: "no-match", matches: rows };
+  }
+
+  async matchFiltered(
+    vec: number[],
+    opts: { topK?: number; minScore?: number; type?: string } = {}
+  ) {
+    const { topK = 5, minScore = 0, type } = opts;
+
+    /* (1) stringify -> '[0.12,-0.34,…]' */
+    const lit = vecLiteral(vec);
+
+    /* (2) use it as a *parameter* and cast inside SQL  ------------ */
+    const rows = await db.execute<{
+      cid: string;
+      type: string;
+      score: number;
+    }>(sql`
+    SELECT cid,
+           type,
+           1 - (embedding <=> ${lit}::vector) AS score   -- 👈 cast here
+    FROM   resource
+    WHERE  embedding IS NOT NULL
+           ${type ? sql`AND type = ${type}` : sql``}
+    ORDER  BY score DESC
+    LIMIT  ${topK}
+  `);
+
+    return rows.filter((r) => r.score >= minScore);
   }
 }

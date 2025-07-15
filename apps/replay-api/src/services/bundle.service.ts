@@ -1,146 +1,194 @@
-// src/services/bundle.service.ts
+/*─────────────────────────────────────────────────────────────*\
+  src/services/bundle.service.ts
+\*─────────────────────────────────────────────────────────────*/
 
-import type {
-	Action as EAAAction,
-	Attribution as EAAAttribution,
-	Entity as EAAEntity,
-	Resource as EAAResource,
-	ProvenanceBundle,
-} from "@arttribute/eaa-types";
+import { db } from "../../db/client";
+import { entity, resource, action, attribution } from "../../db/schema";
 import { sql } from "drizzle-orm";
-import { v4 as uuid } from "uuid";
-import { db } from "../../db/client.js";
-import { action, attribution, entity, resource } from "../../db/schema.js";
+import {
+  ProvenanceBundle,
+  Entity as EAAEntity,
+  Resource as EAAResource,
+  Action as EAAAction,
+  Attribution as EAAAttribution,
+} from "@arttribute/eaa-types";
+import { v4 as uuidv4 } from "uuid";
 
-/*------------------------------------------------------------*\
-  Helpers to map EAA Type → DB row shapes
-\*------------------------------------------------------------*/
-function entRow(e: EAAEntity) {
-	return {
-		entityId: e.id ?? uuid(),
-		role: typeof e.role === "string" ? e.role : String(e.role ?? "unknown"),
-		name: e.name ?? null,
-		wallet: e.wallet ?? null,
-		metadata: e.metadata ?? null,
-		extensions: e.extensions ?? null,
-	};
-}
+/*---------- helpers: DB → EAA ---------------------------------------*/
+const toEntity = (row: typeof entity.$inferSelect): EAAEntity => ({
+  id: row.entityId,
+  role: row.role,
+  name: row.name ?? undefined,
+  wallet: row.wallet ?? undefined,
+  publicKey: row.publicKey ?? undefined,
+});
 
-function resRow(r: EAAResource) {
-	return {
-		cid: r.address?.cid ?? "",
-		size: r.address?.size ?? 0,
-		algorithm: r.address?.algorithm ?? "",
-		type: typeof r.type === "string" ? r.type : String(r.type ?? "unknown"),
-		locations: r.locations ?? [],
-		createdBy: r.createdBy ?? "",
-		rootAction: r.rootAction ?? "",
-		license: r.license ?? "",
-		extensions: r.extensions ?? null,
-	};
-}
+const toResource = (row: typeof resource.$inferSelect): EAAResource => ({
+  address: {
+    cid: row.cid,
+    size: row.size,
+    algorithm: row.algorithm as "sha256",
+  },
+  type: row.type,
+  locations: row.locations,
+  createdAt: "", // not stored yet
+  createdBy: row.createdBy,
+  rootAction: row.rootAction,
+});
 
-function actRow(a: EAAAction) {
-	return {
-		actionId: a.id ?? "",
-		type: typeof a.type === "string" ? a.type : String(a.type ?? "unknown"),
-		performedBy: a.performedBy ?? "",
-		timestamp: a.timestamp ? new Date(a.timestamp) : new Date(0),
-		inputCids: a.inputCids ?? [],
-		outputCids: a.outputCids ?? [],
-		proof: a.proof ?? "",
-		extensions: a.extensions ?? {},
-	};
-}
+const toAction = (row: typeof action.$inferSelect): EAAAction => ({
+  id: row.actionId,
+  type: row.type,
+  performedBy: row.performedBy,
+  timestamp: row.timestamp.toISOString(),
+  inputCids: row.inputCids ?? [],
+  outputCids: row.outputCids ?? [],
+  toolUsed: row.toolUsed ?? undefined,
+  proof: row.proof ?? undefined,
+});
 
-function attrRow(at: EAAAttribution) {
-	return {
-		id: uuid(),
-		resourceCid: at.resourceCid ?? "",
-		entityId: at.entityId ?? "",
-		role: typeof at.role === "string" ? at.role : String(at.role),
-		weight: at.weight ?? null,
-		includedRev: at.includedInRevenue ? true : false,
-		includedAttr: at.includedInAttribution ? true : false,
-		note: at.note ?? null,
-		extensions: at.extensions ?? null,
-	};
-}
+const toAttribution = (
+  row: typeof attribution.$inferSelect
+): EAAAttribution => ({
+  resourceCid: row.resourceCid,
+  entityId: row.entityId,
+  role: row.role,
+  weight: row.weight ?? undefined,
+  includedInRevenue: row.includedRev ?? undefined,
+  includedInAttribution: row.includedAttr ?? undefined,
+  note: row.note ?? undefined,
+});
 
-/*------------------------------------------------------------*\
-  Main ingest function
-\*------------------------------------------------------------*/
-export async function ingestBundle(bundle: ProvenanceBundle) {
-	const { entities, resources, actions, attributions } = bundle;
-
-	await db.transaction(async (tx) => {
-		/* entities ------------------------------------------------*/
-		if ((entities ?? []).length) {
-			await tx
-				.insert(entity)
-				.values((entities ?? []).map(entRow))
-				.onConflictDoNothing(); // ignore duplicates
-		}
-
-		/* resources ----------------------------------------------*/
-		if ((resources ?? []).length) {
-			await tx
-				.insert(resource)
-				.values(resources!.map(resRow))
-				.onConflictDoNothing(); // duplicate CIDs ignored
-		}
-
-		/* actions -------------------------------------------------*/
-		if ((actions ?? []).length) {
-			await tx
-				.insert(action)
-				.values((actions ?? []).map(actRow))
-				.onConflictDoNothing(); // duplicate IDs ignored
-		}
-
-		/* attributions -------------------------------------------*/
-		if ((attributions ?? []).length) {
-			await tx
-				.insert(attribution)
-				.values((attributions ?? []).map(attrRow))
-				.onConflictDoNothing(); // duplicate composite keys
-		}
-	});
-}
-
-/*------------------------------------------------------------*\
-  Convenience: fetch a whole bundle back out (optional)
-\*------------------------------------------------------------*/
+/*─────────────────────────────────────────────────────────────*\
+  fetchBundle – GET /bundle/:cid
+\*─────────────────────────────────────────────────────────────*/
 export async function fetchBundle(cid: string): Promise<ProvenanceBundle> {
-	const [res] = await db
-		.select()
-		.from(resource)
-		.where(sql`cid = ${cid}`)
-		.limit(1);
-	if (!res) throw new Error("resource not found");
+  /* 1️⃣  target resource -------------------------------------------*/
+  const [coreRes] = await db
+    .select()
+    .from(resource)
+    .where(sql`cid = ${cid}`)
+    .limit(1);
+  if (!coreRes) throw new Error("resource not found");
 
-	const acts = await db
-		.select()
-		.from(action)
-		.where((a) => sql`${cid} = any(${a.outputCids})`);
+  /* 2️⃣  producing action ------------------------------------------*/
+  const [act] = await db
+    .select()
+    .from(action)
+    .where(sql`${action.outputCids} @> ${JSON.stringify([cid])}`)
+    .limit(1);
 
-	const entityIds = new Set<string>(
-		acts.map((a) => a.performedBy).concat(res.createdBy),
-	);
-	const ents = await db
-		.select()
-		.from(entity)
-		.where((e) => sql`${[...entityIds]} @> array[e.entity_id]`);
-	const attrs = await db
-		.select()
-		.from(attribution)
-		.where((at) => sql`resource_cid = ${cid}`);
+  /* 3️⃣  gather every CID we need expanded -------------------------*/
+  const extraCids = new Set<string>();
+  if (act) {
+    (act.inputCids ?? []).forEach((c) => extraCids.add(c));
+    if (act.toolUsed) extraCids.add(act.toolUsed);
+  }
+  extraCids.delete(cid); // core already fetched
 
-	return {
-		context: "https://replayprotocol.org/context/v1",
-		entities: ents,
-		resources: [res],
-		actions: acts,
-		attributions: attrs,
-	} as unknown as ProvenanceBundle;
+  /* 4️⃣  pull those resource rows ----------------------------------*/
+  let extraResRows: (typeof resource.$inferSelect)[] = [];
+  if (extraCids.size) {
+    extraResRows = await db
+      .select()
+      .from(resource)
+      .where(sql`cid in (${[...extraCids]})`);
+  }
+
+  /* 5️⃣  union => complete resource list ---------------------------*/
+  const allResRows = [coreRes, ...extraResRows];
+
+  /* 6️⃣  entity IDs to include -------------------------------------*/
+  const entIds = new Set<string>([coreRes.createdBy]);
+  if (act) {
+    entIds.add(act.performedBy);
+    allResRows.forEach((r) => entIds.add(r.createdBy));
+  }
+
+  const entRows = await db
+    .select()
+    .from(entity)
+    .where(sql`entity_id in (${[...entIds]})`);
+
+  /* 7️⃣  attributions (only for the core resource) -----------------*/
+  const attrRows = await db
+    .select()
+    .from(attribution)
+    .where(sql`resource_cid = ${cid}`);
+
+  /* 8️⃣  compose bundle --------------------------------------------*/
+  return {
+    context: "https://replayprotocol.org/context/v1",
+    entities: entRows.map(toEntity),
+    resources: allResRows.map(toResource),
+    actions: act ? [toAction(act)] : [],
+    attributions: attrRows.map(toAttribution),
+  };
+}
+/* ────────────────────────────────────────────────────────────
+   Optional: ingest an external bundle (kept from previous impl)
+   ──────────────────────────────────────────────────────────── */
+export async function ingestBundle(bundle: ProvenanceBundle) {
+  await db.transaction(async (tx) => {
+    if ((bundle.entities ?? []).length)
+      await tx
+        .insert(entity)
+        .values(
+          (bundle.entities ?? []).map((e) => ({
+            entityId: e.id ?? "",
+            role: e.role ?? "",
+            name: e.name ?? null,
+          }))
+        )
+        .onConflictDoNothing();
+
+    if ((bundle.resources ?? []).length)
+      await tx
+        .insert(resource)
+        .values(
+          (bundle.resources ?? []).map((r) => ({
+            cid: r.address?.cid ?? "",
+            size: r.address?.size ?? 0,
+            algorithm: r.address?.algorithm ?? "unknown",
+            type: r.type ?? "unknown",
+            locations: r.locations ?? [],
+            createdBy: r.createdBy ?? "",
+            rootAction: r.rootAction ?? "",
+          }))
+        )
+        .onConflictDoNothing();
+
+    if ((bundle.actions ?? []).length)
+      await tx
+        .insert(action)
+        .values(
+          (bundle.actions ?? []).map((a) => ({
+            actionId: a.id || uuidv4(),
+            type: a.type ?? "unknown",
+            performedBy: a.performedBy ?? "unknown",
+            timestamp: new Date(a.timestamp ?? "unknown"),
+            inputCids: a.inputCids ?? [],
+            outputCids: a.outputCids ?? [],
+            tool: a.toolUsed ?? null,
+            proof: a.proof ?? null,
+          }))
+        )
+        .onConflictDoNothing();
+
+    if (bundle.attributions ?? [])
+      await tx
+        .insert(attribution)
+        .values(
+          (bundle.attributions ?? []).map((at) => ({
+            id: uuidv4(),
+            resourceCid: at.resourceCid ?? "",
+            entityId: at.entityId ?? "",
+            role: at.role ?? "",
+            weight: at.weight ?? null,
+            includedRev: at.includedInRevenue ?? false,
+            includedAttr: at.includedInAttribution ?? false,
+          }))
+        )
+        .onConflictDoNothing();
+  });
 }

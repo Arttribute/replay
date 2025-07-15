@@ -2,8 +2,8 @@
   src/services/bundle.service.ts
 \*─────────────────────────────────────────────────────────────*/
 
-import { db } from "../../db/client";
-import { entity, resource, action, attribution } from "../../db/schema";
+import { db } from "../../db/client.js";
+import { entity, resource, action, attribution } from "../../db/schema.js";
 import { sql } from "drizzle-orm";
 import {
   ProvenanceBundle,

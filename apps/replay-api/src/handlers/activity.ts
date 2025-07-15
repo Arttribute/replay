@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { createActivity } from "../services/activity.service";
+import { createActivity } from "../services/activity.service.js";
 
 const r = new Hono();
 

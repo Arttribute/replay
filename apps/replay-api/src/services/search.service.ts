@@ -1,5 +1,5 @@
-import { toDataURI, inferKindFromMime } from "../utils";
-import { EmbeddingService } from "../embedding/service";
+import { toDataURI, inferKindFromMime } from "../utils.js";
+import { EmbeddingService } from "../embedding/service.js";
 
 const embedder = new EmbeddingService();
 

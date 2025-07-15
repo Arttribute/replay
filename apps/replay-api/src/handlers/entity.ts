@@ -1,6 +1,6 @@
 // entity.ts
 import { Hono } from "hono";
-import { upsertEntity } from "../services/entity.service";
+import { upsertEntity } from "../services/entity.service.js";
 
 const r = new Hono();
 

@@ -1,5 +1,5 @@
-import { db } from "../../db/client";
-import { entity, resource, action } from "../../db/schema";
+import { db } from "../../db/client.js";
+import { entity, resource, action } from "../../db/schema.js";
 import { sql } from "drizzle-orm";
 
 /* ------------------------------------------------------------------ */

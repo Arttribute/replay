@@ -24,6 +24,6 @@ app.route("/", provenanceRoute);
 app.route("/", graphRoute);
 app.route("/", searchRoute);
 
-serve({ fetch: app.fetch, port: 3000 }, ({ port }) =>
+serve({ fetch: app.fetch, port: 8080 }, ({ port }) =>
   console.log(`Replay API 🚀  http://localhost:${port}`)
 );

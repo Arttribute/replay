@@ -30,6 +30,7 @@ export const ActivityPayload = z.object({
     proof: z.string().optional(),
     extensions: z.record(z.any()).optional(),
   }),
+  resourceType: z.string().optional(),
 });
 export type ActivityPayload = z.infer<typeof ActivityPayload>;
 
@@ -42,7 +43,7 @@ export async function createActivity(file: File, body: unknown) {
   if (!parsed.success) {
     throw new Error(JSON.stringify(parsed.error.format()));
   }
-  const { entity: ent, action: act } = parsed.data;
+  const { entity: ent, action: act, resourceType: rtype } = parsed.data;
 
   /* 2-B. File → bytes + MIME */
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -96,7 +97,7 @@ export async function createActivity(file: File, body: unknown) {
       cid,
       size,
       algorithm: "sha256",
-      type: fileType,
+      type: rtype || fileType,
       locations: [{ uri: `ipfs://${cid}`, provider: "ipfs", verified: true }],
       createdBy: entityId,
       rootAction: actionId,

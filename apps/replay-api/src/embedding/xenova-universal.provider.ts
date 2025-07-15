@@ -115,7 +115,6 @@ export class XenovaUniversalProvider implements EmbeddingProvider {
         pooling: "mean",
         normalize: true,
       });
-      console.log("Image embedding output:", out);
       return Array.from(out.data as Float32Array);
     } finally {
       await unlink(tmpPath).catch(() => {});
@@ -158,7 +157,6 @@ export class XenovaUniversalProvider implements EmbeddingProvider {
         pooling: "mean",
         normalize: true,
       });
-      console.log("Audio embedding output:", audio_embeds);
       return Array.from(audio_embeds.data as Float32Array);
     } finally {
       unlink(inPath).catch(() => {});

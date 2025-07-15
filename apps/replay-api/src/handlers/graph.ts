@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { buildProvenanceGraph } from "../services/graph.service";
+import { buildProvenanceGraph } from "../services/graph.service.js";
 
 export const graphRoute = new Hono();
 

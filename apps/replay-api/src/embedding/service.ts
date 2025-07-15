@@ -1,8 +1,8 @@
-import { XenovaUniversalProvider } from "./xenova-universal.provider";
-import { db } from "../../db/client";
-import { resource } from "../../db/schema";
+import { XenovaUniversalProvider } from "./xenova-universal.provider.js";
+import { db } from "../../db/client.js";
+import { resource } from "../../db/schema.js";
 import { sql } from "drizzle-orm";
-import { vecLiteral } from "../utils";
+import { vecLiteral } from "../utils.js";
 
 export class EmbeddingService {
   constructor(private p = new XenovaUniversalProvider()) {}

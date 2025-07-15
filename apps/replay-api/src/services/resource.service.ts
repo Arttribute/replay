@@ -1,8 +1,8 @@
-import { pinBytes } from "../ipfs/pinata";
-import { EmbeddingService } from "../embedding/service";
-import { db } from "../../db/client";
-import { resource } from "../../db/schema";
-import { toDataURI } from "../utils";
+import { pinBytes } from "../ipfs/pinata.js";
+import { EmbeddingService } from "../embedding/service.js";
+import { db } from "../../db/client.js";
+import { resource } from "../../db/schema.js";
+import { toDataURI } from "../utils.js";
 
 const embedder = new EmbeddingService();
 

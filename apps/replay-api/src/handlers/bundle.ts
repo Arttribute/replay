@@ -1,6 +1,6 @@
 // bundle.ts
 import { Hono } from "hono";
-import { fetchBundle } from "../services/bundle.service";
+import { fetchBundle } from "../services/bundle.service.js";
 
 const r = new Hono();
 

@@ -1,7 +1,7 @@
 // similar.ts
 import { Hono } from "hono";
-import { EmbeddingService } from "../embedding/service";
-import { db } from "../../db/client";
+import { EmbeddingService } from "../embedding/service.js";
+import { db } from "../../db/client.js";
 import { sql } from "drizzle-orm";
 
 const embedder = new EmbeddingService();

@@ -3,11 +3,11 @@
 \*─────────────────────────────────────────────────────────────*/
 
 import { z } from "zod";
-import { db } from "../../db/client";
-import { entity, action, resource, attribution } from "../../db/schema";
-import { pinBytes } from "../ipfs/pinata";
-import { EmbeddingService } from "../embedding/service";
-import { toDataURI } from "../utils";
+import { db } from "../../db/client.js";
+import { entity, action, resource, attribution } from "../../db/schema.js";
+import { pinBytes } from "../ipfs/pinata.js";
+import { EmbeddingService } from "../embedding/service.js";
+import { toDataURI } from "../utils.js";
 import { v4 as uuidv4 } from "uuid";
 
 const embedder = new EmbeddingService();

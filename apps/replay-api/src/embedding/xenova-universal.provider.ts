@@ -13,7 +13,7 @@ import { readFile, writeFile, unlink } from "node:fs/promises";
 import ffmpeg from "fluent-ffmpeg";
 import WavefileMod from "wavefile";
 
-import type { EmbeddingProvider } from "./provider";
+import type { EmbeddingProvider } from "./provider.js";
 
 type Vec = number[];
 const WaveFile = WavefileMod.WaveFile;

@@ -1,6 +1,6 @@
 // apps/replay-api/src/routes/provenance.route.ts
 import { Hono } from "hono";
-import { buildProvenance } from "../services/provenance.service";
+import { buildProvenance } from "../services/provenance.service.js";
 
 export const provenanceRoute = new Hono();
 

@@ -2,14 +2,14 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
-import health from "./handlers/health";
-import entity from "./handlers/entity";
-import activity from "./handlers/activity";
-import bundle from "./handlers/bundle";
-import similar from "./handlers/similar";
-import { provenanceRoute } from "./handlers/provenance";
-import { graphRoute } from "./handlers/graph";
-import { searchRoute } from "./handlers/search";
+import health from "./handlers/health.js";
+import entity from "./handlers/entity.js";
+import activity from "./handlers/activity.js";
+import bundle from "./handlers/bundle.js";
+import similar from "./handlers/similar.js";
+import { provenanceRoute } from "./handlers/provenance.js";
+import { graphRoute } from "./handlers/graph.js";
+import { searchRoute } from "./handlers/search.js";
 
 const app = new Hono();
 app.use("*", cors());

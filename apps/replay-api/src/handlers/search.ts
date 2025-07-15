@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { searchByFile, searchByText } from "../services/search.service";
-import { inferKindFromMime } from "../utils";
+import { searchByFile, searchByText } from "../services/search.service.js";
+import { inferKindFromMime } from "../utils.js";
 
 export const searchRoute = new Hono();
 

@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node --experimental-specifier-resolution=node dist/src/index.js"
+    "start": "node dist/src/index.js"
   },
   "dependencies": {
     "@arttribute/eaa-types": "^0.0.1",

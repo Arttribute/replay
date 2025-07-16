@@ -76,4 +76,9 @@ export class EmbeddingService {
 
     return rows.filter((r) => r.score >= minScore);
   }
+
+  async matchTop1(vec: number[], minScore = 0.95, type?: string) {
+    const res = await this.matchFiltered(vec, { topK: 1, minScore, type });
+    return res[0];
+  }
 }

@@ -8,8 +8,8 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@arttribute/replay-ui": ["packages/replay-ui/src"],
-      "@arttribute/replay-sdk": ["packages/replay-sdk/src"]
+      "@provenancekit/ui": ["packages/provenancekit-ui/src"],
+      "@provenancekit/sdk": ["packages/provenancekit-sdk/src"]
     }
   }
 }

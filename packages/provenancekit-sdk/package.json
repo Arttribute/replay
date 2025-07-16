@@ -1,5 +1,5 @@
 {
-  "name": "@arttribute/replay-sdk",
+  "name": "@provenancekit/sdk",
   "version": "1.0.0",
   "description": "",
   "main": "src/index.ts",
@@ -9,12 +9,16 @@
   "keywords": [
     "attribution",
     "sdk",
-    "replay"
+    "provenance"
   ],
   "author": "bashy@arttribute.io",
   "license": "MIT",
   "packageManager": "pnpm@10.12.4",
   "devDependencies": {
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@arttribute/eaa-types": "^0.0.1",
+    "@types/node": "^24.0.14"
   }
 }

@@ -1,60 +1,68 @@
+// apps/replay-api/src/handlers/search.ts
 import { Hono } from "hono";
 import { searchByFile, searchByText } from "../services/search.service.js";
 import { inferKindFromMime } from "../utils.js";
+import { ReplayError } from "../errors.js";
 
-export const searchRoute = new Hono();
+const r = new Hono();
 
-/*────────────────────────────────────────────────────────────*
- *  POST /search/file                                         *
- *  Multipart form: “file” field required                     *
- *  Optional query params: ?type=audio|image…&topK=10&min=0.7 *
- *────────────────────────────────────────────────────────────*/
-searchRoute.post("/search/file", async (c) => {
+/*--------------------------------------------------------------
+  POST /search/file
+  multipart: file=<binary>
+--------------------------------------------------------------*/
+r.post("/search/file", async (c) => {
   const topK = Number(c.req.query("topK") ?? 5);
-  const minScore = Number(c.req.query("min") ?? 0);
-  const override = c.req.query("type"); // optional resource-type
+  const min = Number(c.req.query("min") ?? 0);
+  const overrideType = c.req.query("type");
 
   const form = await c.req.parseBody();
   if (!(form.file instanceof File))
-    return c.json({ error: "`file` field (multipart) required" }, 400);
+    throw new ReplayError("MissingField", "`file` part required");
 
-  const kind = override || inferKindFromMime(form.file.type) || undefined;
+  const kind = overrideType || inferKindFromMime(form.file.type);
+  if (!kind)
+    throw new ReplayError(
+      "Unsupported",
+      `Cannot infer kind from mime ${form.file.type}`,
+      {
+        recovery: "Specify ?type=image|audio|text|video",
+      }
+    );
 
-  try {
-    const results = await searchByFile(form.file, {
-      type: kind,
-      topK,
-      minScore,
+  const result = await searchByFile(form.file, {
+    type: kind,
+    topK,
+    minScore: min,
+  }).catch((e) => {
+    throw new ReplayError("EmbeddingFailed", "Embedding generation failed", {
+      details: e,
     });
-    return c.json(results, 200);
-  } catch (err: any) {
-    return c.json({ error: err.message ?? String(err) }, 400);
-  }
+  });
+
+  return c.json(result);
 });
 
-/*────────────────────────────────────────────────────────────*
- *  POST /search/text                                         *
- *  JSON body: { text: "...", type?: "image", topK?: 10,      *
- *               minScore?: 0.75 }                            *
- *────────────────────────────────────────────────────────────*/
-searchRoute.post("/search/text", async (c) => {
+/*--------------------------------------------------------------
+  POST /search/text
+  body: { text: "...", type?: "...", topK?: n, minScore?: n }
+--------------------------------------------------------------*/
+r.post("/search/text", async (c) => {
   const body = await c.req.json().catch(() => ({}));
 
-  if (typeof body.text !== "string" || body.text.trim() === "")
-    return c.json({ error: "`text` (string) required" }, 400);
+  if (typeof body.text !== "string" || !body.text.trim())
+    throw new ReplayError("MissingField", "`text` is required in body");
 
-  const topK = typeof body.topK === "number" ? body.topK : 5;
-  const minScore = typeof body.minScore === "number" ? body.minScore : 0;
-  const kind = typeof body.type === "string" ? body.type : undefined;
-
-  try {
-    const results = await searchByText(body.text, {
-      type: kind,
-      topK,
-      minScore,
+  const result = await searchByText(body.text, {
+    type: typeof body.type === "string" ? body.type : undefined,
+    topK: typeof body.topK === "number" ? body.topK : 5,
+    minScore: typeof body.minScore === "number" ? body.minScore : 0,
+  }).catch((e) => {
+    throw new ReplayError("EmbeddingFailed", "Text embedding failed", {
+      details: e,
     });
-    return c.json(results, 200);
-  } catch (err: any) {
-    return c.json({ error: err.message ?? String(err) }, 400);
-  }
+  });
+
+  return c.json(result);
 });
+
+export const searchRoute = r;

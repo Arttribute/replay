@@ -1,21 +1,31 @@
-// apps/replay-api/src/routes/provenance.route.ts
+// apps/replay-api/src/handlers/provenance.ts
 import { Hono } from "hono";
 import { buildProvenance } from "../services/provenance.service.js";
+import { ReplayError } from "../errors.js";
 
-export const provenanceRoute = new Hono();
+const r = new Hono();
 
 /**
- * GET /provenance/:cid?depth=*
- * - depth (optional, default 10) limits upstream traversal
+ * GET /provenance/:cid?depth=10
  */
-provenanceRoute.get("/provenance/:cid", async (c) => {
+r.get("/provenance/:cid", async (c) => {
   const cid = c.req.param("cid");
-  const depth = Number(c.req.query("depth") ?? 10);
+  const depthRaw = c.req.query("depth") ?? "10";
+  const depth = Number(depthRaw);
+
+  if (!cid) throw new ReplayError("MissingField", "cid path param required");
+
+  if (Number.isNaN(depth) || depth < 0)
+    throw new ReplayError("InvalidField", "`depth` must be a positive number");
 
   try {
     const bundle = await buildProvenance(cid, depth);
     return c.json(bundle);
-  } catch (err: any) {
-    return c.json({ error: err.message ?? String(err) }, 404);
+  } catch (e: any) {
+    if (e.message === "resource not found")
+      throw new ReplayError("NotFound", "Resource not found");
+    throw e;
   }
 });
+
+export const provenanceRoute = r;

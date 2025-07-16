@@ -1,5 +1,5 @@
 {
-  "name": "replay-api",
+  "name": "provenancekit-api",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",

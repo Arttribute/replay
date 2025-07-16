@@ -1,5 +1,5 @@
 import { Api, ApiClientOptions } from "./api";
-import { ReplayError } from "./errors";
+import { ProvenanceKitError } from "./errors";
 import type {
   UploadMatchResult,
   DuplicateDetails,
@@ -49,7 +49,7 @@ export interface FileResult {
   matched?: Match;
 }
 
-export class Replay {
+export class ProvenanceKit {
   private readonly api: Api;
   readonly unclaimed = "ent:unclaimed";
 
@@ -92,7 +92,7 @@ export class Replay {
       }>("/activity", this.form(file, opts));
       return { ...res }; // brand‑new resource
     } catch (e) {
-      if (e instanceof ReplayError && e.code === "Duplicate") {
+      if (e instanceof ProvenanceKitError && e.code === "Duplicate") {
         const d = e.details as DuplicateDetails;
         return {
           cid: d.cid,

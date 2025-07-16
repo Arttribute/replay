@@ -7,7 +7,7 @@ import { EmbeddingService } from "../embedding/service.js";
 import { toDataURI } from "../utils.js";
 import { v4 as uuidv4 } from "uuid";
 import { sql } from "drizzle-orm";
-import { ReplayError } from "../errors.js";
+import { ProvenanceKitError } from "../errors.js";
 
 const embedder = new EmbeddingService();
 
@@ -39,7 +39,7 @@ export type ActivityPayload = z.infer<typeof ActivityPayload>;
 export async function createActivity(file: File, body: unknown) {
   /* 2‑A. payload validation */
   const parsed = ActivityPayload.safeParse(body);
-  if (!parsed.success) throw ReplayError.fromZod(parsed.error);
+  if (!parsed.success) throw ProvenanceKitError.fromZod(parsed.error);
 
   const { entity: ent, action: act, resourceType: rtype } = parsed.data;
 
@@ -58,7 +58,7 @@ export async function createActivity(file: File, body: unknown) {
     .limit(1);
 
   if (existing)
-    throw new ReplayError(
+    throw new ProvenanceKitError(
       "Duplicate",
       "Resource with identical CID already exists",
       {
@@ -85,7 +85,7 @@ export async function createActivity(file: File, body: unknown) {
   });
 
   if (near.length)
-    throw new ReplayError(
+    throw new ProvenanceKitError(
       "Duplicate",
       "A very similar resource already exists",
       {

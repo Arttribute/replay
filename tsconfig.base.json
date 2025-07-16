@@ -8,8 +8,9 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
+      "@provenancekit/sdk": ["packages/provenancekit-sdk/src"],
       "@provenancekit/ui": ["packages/provenancekit-ui/src"],
-      "@provenancekit/sdk": ["packages/provenancekit-sdk/src"]
+      "@provenancekit/openai": ["packages/provenancekit-openai/src"]
     }
   }
 }

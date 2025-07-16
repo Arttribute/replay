@@ -1,7 +1,7 @@
 // apps/replay-api/src/handlers/entity.ts
 import { Hono } from "hono";
 import { upsertEntity } from "../services/entity.service.js";
-import { ReplayError } from "../errors";
+import { ReplayError } from "../errors.js";
 
 const r = new Hono();
 

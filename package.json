@@ -1,5 +1,5 @@
 {
-  "name": "replay",
+  "name": "provenancekit",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,7 +9,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.12.4",
   "pnpm": {
     "overrides": {
       "@xenova/transformers>sharp": "0.33.5"

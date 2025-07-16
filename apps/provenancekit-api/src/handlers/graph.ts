@@ -1,7 +1,7 @@
-// apps/replay-api/src/handlers/graph.ts
+// apps/provenanceKit-api/src/handlers/graph.ts
 import { Hono } from "hono";
 import { buildProvenanceGraph } from "../services/graph.service.js";
-import { ReplayError } from "../errors.js";
+import { ProvenanceKitError } from "../errors.js";
 
 const r = new Hono();
 
@@ -14,19 +14,22 @@ r.get("/graph/:cid", async (c) => {
   const depth = Number(depthRaw);
 
   if (!cid)
-    throw new ReplayError("MissingField", "cid path param required", {
+    throw new ProvenanceKitError("MissingField", "cid path param required", {
       recovery: "Call /graph/{CID}",
     });
 
   if (Number.isNaN(depth) || depth < 0)
-    throw new ReplayError("InvalidField", "`depth` must be a positive number");
+    throw new ProvenanceKitError(
+      "InvalidField",
+      "`depth` must be a positive number"
+    );
 
   try {
     const graph = await buildProvenanceGraph(cid, depth);
     return c.json(graph);
   } catch (e: any) {
     if (e.message === "resource not found")
-      throw new ReplayError("NotFound", "Resource not found");
+      throw new ProvenanceKitError("NotFound", "Resource not found");
     throw e;
   }
 });

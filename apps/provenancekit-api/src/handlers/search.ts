@@ -1,8 +1,8 @@
-// apps/replay-api/src/handlers/search.ts
+// apps/provenanceKit-api/src/handlers/search.ts
 import { Hono } from "hono";
 import { searchByFile, searchByText } from "../services/search.service.js";
 import { inferKindFromMime } from "../utils.js";
-import { ReplayError } from "../errors.js";
+import { ProvenanceKitError } from "../errors.js";
 
 const r = new Hono();
 
@@ -17,11 +17,11 @@ r.post("/search/file", async (c) => {
 
   const form = await c.req.parseBody();
   if (!(form.file instanceof File))
-    throw new ReplayError("MissingField", "`file` part required");
+    throw new ProvenanceKitError("MissingField", "`file` part required");
 
   const kind = overrideType || inferKindFromMime(form.file.type);
   if (!kind)
-    throw new ReplayError(
+    throw new ProvenanceKitError(
       "Unsupported",
       `Cannot infer kind from mime ${form.file.type}`,
       {
@@ -34,9 +34,13 @@ r.post("/search/file", async (c) => {
     topK,
     minScore: min,
   }).catch((e) => {
-    throw new ReplayError("EmbeddingFailed", "Embedding generation failed", {
-      details: e,
-    });
+    throw new ProvenanceKitError(
+      "EmbeddingFailed",
+      "Embedding generation failed",
+      {
+        details: e,
+      }
+    );
   });
 
   return c.json(result);
@@ -50,14 +54,14 @@ r.post("/search/text", async (c) => {
   const body = await c.req.json().catch(() => ({}));
 
   if (typeof body.text !== "string" || !body.text.trim())
-    throw new ReplayError("MissingField", "`text` is required in body");
+    throw new ProvenanceKitError("MissingField", "`text` is required in body");
 
   const result = await searchByText(body.text, {
     type: typeof body.type === "string" ? body.type : undefined,
     topK: typeof body.topK === "number" ? body.topK : 5,
     minScore: typeof body.minScore === "number" ? body.minScore : 0,
   }).catch((e) => {
-    throw new ReplayError("EmbeddingFailed", "Text embedding failed", {
+    throw new ProvenanceKitError("EmbeddingFailed", "Text embedding failed", {
       details: e,
     });
   });

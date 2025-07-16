@@ -1,7 +1,4 @@
-/*─────────────────────────────────────────────────────────────*\
-  src/services/activity.service.ts
-\*─────────────────────────────────────────────────────────────*/
-
+//src/services/activity.service.ts
 import { z } from "zod";
 import { db } from "../../db/client.js";
 import { entity, action, resource, attribution } from "../../db/schema.js";
@@ -9,6 +6,8 @@ import { pinBytes } from "../ipfs/pinata.js";
 import { EmbeddingService } from "../embedding/service.js";
 import { toDataURI } from "../utils.js";
 import { v4 as uuidv4 } from "uuid";
+import { sql } from "drizzle-orm";
+import { ReplayError } from "../errors.js";
 
 const embedder = new EmbeddingService();
 
@@ -38,20 +37,67 @@ export type ActivityPayload = z.infer<typeof ActivityPayload>;
   2.  Public façade
 \*─────────────────────────────────────────────────────────────*/
 export async function createActivity(file: File, body: unknown) {
-  /* 2-A. Validate */
+  /* 2‑A. payload validation */
   const parsed = ActivityPayload.safeParse(body);
-  if (!parsed.success) {
-    throw new Error(JSON.stringify(parsed.error.format()));
-  }
+  if (!parsed.success) throw ReplayError.fromZod(parsed.error);
+
   const { entity: ent, action: act, resourceType: rtype } = parsed.data;
 
-  /* 2-B. File → bytes + MIME */
+  /* 2‑B. File → bytes + MIME */
   const bytes = new Uint8Array(await file.arrayBuffer());
   const mime = file.type || "application/octet-stream";
 
-  /* 2-C. PG transactional work */
+  /* 2‑C. Pin to IPFS (returns deterministic CID) */
+  const { cid, size } = await pinBytes(bytes, file.name, mime);
+
+  /* 2‑D. Prevent exact duplicates -------------------------------- */
+  const [existing] = await db
+    .select({ cid: resource.cid })
+    .from(resource)
+    .where(sql`cid = ${cid}`)
+    .limit(1);
+
+  if (existing)
+    throw new ReplayError(
+      "Duplicate",
+      "Resource with identical CID already exists",
+      {
+        recovery: "Reuse the returned CID instead of uploading",
+        details: { cid, similarity: 1 },
+      }
+    );
+
+  /* 2‑E. Compute embedding & high‑similarity check --------------- */
+  const fileType = mime.startsWith("image/")
+    ? "image"
+    : mime.startsWith("audio/")
+    ? "audio"
+    : mime.startsWith("video/")
+    ? "video"
+    : "text";
+
+  const vec = await embedder.vector(fileType, toDataURI(bytes, mime));
+
+  const near = await embedder.matchFiltered(vec, {
+    topK: 1,
+    minScore: 0.95,
+    type: fileType,
+  });
+
+  if (near.length)
+    throw new ReplayError(
+      "Duplicate",
+      "A very similar resource already exists",
+      {
+        recovery:
+          "Consider linking to the existing CID instead of re‑uploading",
+        details: { cid: near[0].cid, similarity: near[0].score },
+      }
+    );
+
+  /* 2‑F. Transactional write ------------------------------------ */
   return db.transaction(async (tx) => {
-    /* 1️⃣  Entity upsert -------------------------------------------------- */
+    /* 1️⃣ Entity upsert */
     const entityId = ent.id ?? uuidv4();
     await tx
       .insert(entity)
@@ -64,19 +110,7 @@ export async function createActivity(file: File, body: unknown) {
       })
       .onConflictDoNothing();
 
-    /* 2️⃣  Pin & embed ---------------------------------------------------- */
-    const { cid, size } = await pinBytes(bytes, file.name, mime);
-    const fileType = mime.startsWith("image/")
-      ? "image"
-      : mime.startsWith("audio/")
-      ? "audio"
-      : mime.startsWith("video/")
-      ? "video"
-      : "text";
-    console.log("Embedding file type:", fileType);
-    const vec = await embedder.vector(fileType, toDataURI(bytes, mime));
-
-    /* 3️⃣  Action row ----------------------------------------------------- */
+    /* 2️⃣ Action row */
     const [a] = await tx
       .insert(action)
       .values({
@@ -90,9 +124,8 @@ export async function createActivity(file: File, body: unknown) {
         extensions: act.extensions ?? null,
       })
       .returning({ actionId: action.actionId });
-    const actionId = a.actionId;
 
-    /* 4️⃣  Resource row --------------------------------------------------- */
+    /* 3️⃣ Resource row */
     await tx.insert(resource).values({
       cid,
       size,
@@ -100,38 +133,31 @@ export async function createActivity(file: File, body: unknown) {
       type: rtype || fileType,
       locations: [{ uri: `ipfs://${cid}`, provider: "ipfs", verified: true }],
       createdBy: entityId,
-      rootAction: actionId,
+      rootAction: a.actionId,
       embedding: vec,
     });
 
-    /* 5️⃣  Attributions (only for *external* inputs) ---------------------- */
-    const attrRows: (typeof attribution.$inferInsert)[] = [];
+    /* 4️⃣ Attributions (for external inputs or tool) */
+    const rows: (typeof attribution.$inferInsert)[] = [];
 
-    /* inputCids -> role=sourceMaterial */
-    for (const srcCid of act.inputCids) {
-      attrRows.push({
+    for (const src of act.inputCids)
+      rows.push({
         resourceCid: cid,
-        entityId: entityId, // 🔸 if real owner is known, replace here
+        entityId,
         role: "sourceMaterial",
         includedAttr: true,
       });
-    }
 
-    /* toolCid    -> role=tool */
-    if (act.toolCid) {
-      attrRows.push({
+    if (act.toolCid)
+      rows.push({
         resourceCid: cid,
-        entityId: entityId, // 🔸 swap if tool owner known
+        entityId,
         role: "tool",
         includedAttr: false,
       });
-    }
 
-    if (attrRows.length) {
-      await tx.insert(attribution).values(attrRows);
-    }
+    if (rows.length) await tx.insert(attribution).values(rows);
 
-    /* 6️⃣  Done ----------------------------------------------------------- */
-    return { cid, actionId, entityId };
+    return { cid, actionId: a.actionId, entityId };
   });
 }

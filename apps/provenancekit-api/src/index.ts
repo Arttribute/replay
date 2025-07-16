@@ -12,7 +12,7 @@ import { provenanceRoute } from "./handlers/provenance.js";
 import graph from "./handlers/graph.js";
 import { searchRoute } from "./handlers/search.js";
 
-import { toReplayError } from "./errors.js";
+import { toProvenanceKitError } from "./errors.js";
 
 const app = new Hono();
 app.use("*", cors());
@@ -28,7 +28,7 @@ app.route("/", searchRoute);
 
 /* -------- central error formatter --------------------------------- */
 app.onError((err, c) => {
-  const e = toReplayError(err);
+  const e = toProvenanceKitError(err);
   return c.json(
     {
       error: {

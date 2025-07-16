@@ -1,7 +1,7 @@
-// apps/replay-api/src/handlers/bundle.ts
+// apps/provenancekit-api/src/handlers/bundle.ts
 import { Hono } from "hono";
 import { fetchBundle } from "../services/bundle.service.js";
-import { ReplayError } from "../errors.js";
+import { ProvenanceKitError } from "../errors.js";
 
 const r = new Hono();
 
@@ -11,7 +11,7 @@ const r = new Hono();
 r.get("/bundle/:cid", async (c) => {
   const cid = c.req.param("cid");
   if (!cid)
-    throw new ReplayError("MissingField", "cid path param required", {
+    throw new ProvenanceKitError("MissingField", "cid path param required", {
       recovery: "Call /bundle/{CID}",
     });
 
@@ -20,7 +20,7 @@ r.get("/bundle/:cid", async (c) => {
     return c.json(bundle);
   } catch (e) {
     if (e instanceof Error && e.message === "resource not found")
-      throw new ReplayError("NotFound", "Resource not found");
+      throw new ProvenanceKitError("NotFound", "Resource not found");
     throw e;
   }
 });

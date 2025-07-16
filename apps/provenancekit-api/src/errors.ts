@@ -1,7 +1,7 @@
-// apps/replay-api/src/errors.ts
+// apps/ProvenanceKit-api/src/errors.ts
 import { ZodError } from "zod";
 
-/** All Replay‑specific error codes */
+/** All ProvenanceKit‑specific error codes */
 export type ErrorCode =
   | "MissingField" // required field absent
   | "InvalidField" // type/format wrong
@@ -12,7 +12,7 @@ export type ErrorCode =
   | "EmbeddingFailed" // ML encoder failure
   | "Internal"; // any uncaught error
 
-export class ReplayError extends Error {
+export class ProvenanceKitError extends Error {
   readonly code: ErrorCode;
   readonly status: number;
   /** Human hint to fix the problem (optional) */
@@ -48,18 +48,22 @@ export class ReplayError extends Error {
   }
 
   /* Helper: convert Zod errors → ValidationError */
-  static fromZod(err: ZodError): ReplayError {
-    return new ReplayError("ValidationError", "Payload validation failed", {
-      details: err.flatten(),
-      recovery: "Review `details` and supply fields in the correct shape",
-    });
+  static fromZod(err: ZodError): ProvenanceKitError {
+    return new ProvenanceKitError(
+      "ValidationError",
+      "Payload validation failed",
+      {
+        details: err.flatten(),
+        recovery: "Review `details` and supply fields in the correct shape",
+      }
+    );
   }
 }
 
-/** Wrap *any* thrown value into ReplayError(Internal) */
-export function toReplayError(err: unknown): ReplayError {
-  if (err instanceof ReplayError) return err;
-  if (err instanceof ZodError) return ReplayError.fromZod(err);
+/** Wrap *any* thrown value into ProvenanceKitError(Internal) */
+export function toProvenanceKitError(err: unknown): ProvenanceKitError {
+  if (err instanceof ProvenanceKitError) return err;
+  if (err instanceof ZodError) return ProvenanceKitError.fromZod(err);
   console.error(err); // full stack trace for ops
-  return new ReplayError("Internal", "Internal server error");
+  return new ProvenanceKitError("Internal", "Internal server error");
 }

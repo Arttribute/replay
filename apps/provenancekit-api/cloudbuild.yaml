@@ -1,6 +1,6 @@
 steps:
   - name: node
-    dir: './apps/replay-api'
+    dir: './apps/provenancekit-api'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -9,12 +9,12 @@ steps:
         pnpm install
         pnpm build
   - name: 'gcr.io/cloud-builders/docker'
-    dir: './apps/replay-api'
+    dir: './apps/provenancekit-api'
     args:
       [
         'build',
         '-t',
-        'europe-west1-docker.pkg.dev/$PROJECT_ID/replay/replay-api:$SHORT_SHA',
+        'europe-west1-docker.pkg.dev/$PROJECT_ID/provenancekit/provenancekit-api:$SHORT_SHA',
         '-f',
         'Dockerfile',
         '.',
@@ -25,15 +25,15 @@ steps:
     args:
       [
         'tag',
-        'europe-west1-docker.pkg.dev/$PROJECT_ID/replay/replay-api:$SHORT_SHA',
-        'europe-west1-docker.pkg.dev/$PROJECT_ID/replay/replay-api:prod',
+        'europe-west1-docker.pkg.dev/$PROJECT_ID/provenancekit/provenancekit-api:$SHORT_SHA',
+        'europe-west1-docker.pkg.dev/$PROJECT_ID/provenancekit/provenancekit-api:prod',
       ]
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'push',
-        'europe-west1-docker.pkg.dev/$PROJECT_ID/replay/replay-api',
+        'europe-west1-docker.pkg.dev/$PROJECT_ID/provenancekit/provenancekit-api',
         '--all-tags',
       ]
 
@@ -44,10 +44,10 @@ steps:
     args:
       - run
       - deploy
-      - arttribute-replay-api-prod
+      - arttribute-provenancekit-api-prod
       - --region=europe-west1
       - --platform=managed
-      - --image=europe-west1-docker.pkg.dev/$PROJECT_ID/replay/replay-api:prod
+      - --image=europe-west1-docker.pkg.dev/$PROJECT_ID/provenancekit/provenancekit-api:prod
 
     timeout: 1800s
 # options:

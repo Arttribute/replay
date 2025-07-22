@@ -1,4 +1,4 @@
 export * from "./client";
 export * from "./errors";
 export * from "./types";
-export type { ApiClientOptions } from "./api";
+export { type ApiClientOptions } from "./api";

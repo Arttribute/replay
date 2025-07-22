@@ -13,9 +13,10 @@
     }
   },
   "dependencies": {
-    "@provenancekit/sdk": "workspace:*",
+    "@provenancekit/sdk": "^0.0.1",
     "@types/node": "^24.0.15",
-    "openai": "^4.24.1"
+    "add": "^2.0.6",
+    "openai": "^4.104.0"
   },
   "devDependencies": {
     "tsup": "^8.0.2",

@@ -8,7 +8,7 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@provenancekit/sdk": ["packages/provenancekit-sdk/src"],
+      "@provenancekit/sdk": ["packages/provenancekit-sdk/dist"],
       "@provenancekit/ui": ["packages/provenancekit-ui/src"],
       "@provenancekit/openai": ["packages/provenancekit-openai/src"]
     }

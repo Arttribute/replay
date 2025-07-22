@@ -8,12 +8,28 @@ export const maxDuration = 60;
 
 const BodySchema = z.object({
   messages: z.array(
-    z.object({
-      role: z.enum(["system", "user", "assistant", "tool"]),
-      content: z.string(),
-      name: z.string().optional(),
-      tool_call_id: z.string().optional(),
-    })
+    z.discriminatedUnion("role", [
+      z.object({
+        role: z.literal("system"),
+        content: z.string(),
+      }),
+      z.object({
+        role: z.literal("user"),
+        content: z.string(),
+        name: z.string().optional(),
+      }),
+      z.object({
+        role: z.literal("assistant"),
+        content: z.string(),
+        name: z.string().optional(),
+        tool_call_id: z.string().optional(),
+      }),
+      z.object({
+        role: z.literal("tool"),
+        content: z.string(),
+        tool_call_id: z.string(),
+      }),
+    ])
   ),
   model: z.string().default("gpt-4.1-mini"),
 });

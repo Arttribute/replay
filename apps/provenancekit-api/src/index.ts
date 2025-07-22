@@ -42,6 +42,6 @@ app.onError((err, c) => {
   );
 });
 
-serve({ fetch: app.fetch, port: 3000 }, ({ port }) =>
+serve({ fetch: app.fetch, port: 3001 }, ({ port }) =>
   console.log(`Replay API 🚀  http://localhost:${port}`)
 );

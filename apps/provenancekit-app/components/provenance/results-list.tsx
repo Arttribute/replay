@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { GraphFlow } from "./graph-flow";
 import { jsonFetch } from "@/lib/fetcher";
+import { ProvenanceGraphDialog } from "@/components/provenance/provenance-graph-dialog";
 
 interface GraphData {
   nodes: any[];
@@ -25,7 +26,9 @@ export function ResultList({ cids }: { cids: string[] }) {
   async function openGraph(cid: string) {
     setLoading(true);
     try {
-      const data = await jsonFetch<GraphData>(`/api/graph/${cid}`);
+      const data = await jsonFetch<GraphData>(
+        `/api/provenance/graph?cid=${cid}`
+      );
       setGraph(data);
       setOpen(true);
     } finally {
@@ -41,27 +44,15 @@ export function ResultList({ cids }: { cids: string[] }) {
       <ul className="space-y-1">
         {cids.map((cid) => (
           <li key={cid} className="flex gap-2 items-center text-sm">
-            <code className="break-all">{cid}</code>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => openGraph(cid)}
-            >
-              Graph
-            </Button>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono text-gray-400 truncate">
+                {cid}
+              </span>
+              <ProvenanceGraphDialog cid={cid} />
+            </div>
           </li>
         ))}
       </ul>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-6xl">
-          <DialogHeader>
-            <DialogTitle>Provenance Graph</DialogTitle>
-          </DialogHeader>
-          {loading && <div className="p-4 text-sm">Loading…</div>}
-          {graph && <GraphFlow nodes={graph.nodes} edges={graph.edges} />}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

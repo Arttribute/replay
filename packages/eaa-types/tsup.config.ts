@@ -10,6 +10,4 @@ export default defineConfig({
   outExtension({ format }) {
     return { js: format === "esm" ? ".mjs" : ".cjs" };
   },
-  // 👇 This is the key line
-  noExternal: ["@provenancekit/sdk"],
 });

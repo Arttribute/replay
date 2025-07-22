@@ -1,6 +1,6 @@
 {
   "name": "@provenancekit/openai",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Drop‑in OpenAI client extensions that automatically record provenance in ProvenanceKit.",
   "license": "MIT",
   "type": "module",
@@ -13,8 +13,9 @@
     }
   },
   "dependencies": {
-    "openai": "^4.24.1",
-    "@provenancekit/sdk": "workspace:*"
+    "@provenancekit/sdk": "workspace:*",
+    "@types/node": "^24.0.15",
+    "openai": "^4.24.1"
   },
   "devDependencies": {
     "tsup": "^8.0.2",

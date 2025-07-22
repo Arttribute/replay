@@ -9,7 +9,9 @@ import { OpenAIWithProvenance } from "@provenancekit/openai";
 
 const openai = new OpenAIWithProvenance(
   { apiKey: process.env.OPENAI_API_KEY! }, // ← passes straight to OpenAI
-  { baseUrl: "http://localhost:3000" } // ← ProvenanceKit REST API
+  {
+    baseUrl: "https:/api.provenancekit.io",
+  } // ← ProvenanceKit REST API
 );
 
 // 1️⃣  Image generation

@@ -1,19 +1,20 @@
 {
   "name": "@provenancekit/openai",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Drop‑in OpenAI client extensions that automatically record provenance in ProvenanceKit.",
   "license": "MIT",
-  "type": "module",
   "main": "./dist/index.js",
+  "module": "dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs"
     }
   },
   "dependencies": {
-    "@provenancekit/sdk": "^0.0.1",
+    "@provenancekit/sdk": "^0.0.2",
     "@types/node": "^24.0.15",
     "add": "^2.0.6",
     "openai": "^4.104.0"
@@ -23,7 +24,7 @@
     "typescript": "^5.4.5"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts",
+    "build": "tsup",
     "dev": "tsup src/index.ts --format esm --dts --watch"
   }
 }

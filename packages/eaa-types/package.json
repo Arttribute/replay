@@ -1,35 +1,53 @@
 {
-  "name": "@arttribute/eaa-types",
+  "name": "@provenancekit/sdk",
   "version": "0.0.1",
-  "description": "Entity • Action • Attribution type definitions and Zod schemas",
+  "description": "Framework-agnostic SDK for capturing, persisting, and querying provenance of AI actions and resources.",
   "license": "MIT",
+  "author": "bashy@arttribute.io",
+  "keywords": [
+    "attribution",
+    "sdk",
+    "provenance",
+    "LLM",
+    "audit",
+    "traceability",
+    "observability"
+  ],
+  "type": "module",
   "main": "dist/index.cjs",
-  "module": "dist/index.mjs",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "sideEffects": false,
   "exports": {
     ".": {
+      "import": "./dist/index.js",
       "require": "./dist/index.cjs",
-      "import": "./dist/index.mjs",
       "types": "./dist/index.d.ts"
     }
   },
-  "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts",
-    "dev": "tsup src/index.ts --watch --format esm,cjs --dts",
-    "lint": "eslint src --ext .ts"
-  },
-  "dependencies": {
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "tsup": "^8.0.2",
-    "typescript": "^5.4.0"
-  },
+  "sideEffects": false,
   "publishConfig": {
     "access": "public"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "clean": "rimraf dist",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "pnpm build"
+  },
+  "engines": {
+    "node": ">=18.18"
+  },
+  "packageManager": "pnpm@10.12.4",
+  "dependencies": {
+    "@arttribute/eaa-types": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.15",
+    "rimraf": "^5.0.10",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
   }
 }

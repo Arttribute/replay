@@ -1,24 +1,31 @@
 {
   "name": "@provenancekit/sdk",
   "version": "0.0.1",
-  "description": "",
+  "description": "Framework-agnostic SDK for capturing, persisting, and querying provenance of AI actions and resources.",
   "main": "src/index.ts",
   "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "attribution",
     "sdk",
-    "provenance"
+    "provenance",
+    "LLM",
+    "audit",
+    "traceability",
+    "observability"
   ],
   "author": "bashy@arttribute.io",
   "license": "MIT",
   "packageManager": "pnpm@10.12.4",
   "devDependencies": {
+    "@types/node": "^24.0.14",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@arttribute/eaa-types": "^0.0.1",
-    "@types/node": "^24.0.14"
+    "@arttribute/eaa-types": "^0.0.1"
   }
 }

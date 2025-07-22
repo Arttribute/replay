@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const { text, model, voice, format } = BodySchema.parse(await req.json());
 
     const { response, provenance } = await openaiProv.ttsWithProvenance(
-      { model, voice, input: text, format },
+      { model, voice, input: text },
       { entity: { role: "ai" } }
     );
 

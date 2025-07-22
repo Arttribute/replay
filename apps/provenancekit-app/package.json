@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@provenancekit/openai": "^0.0.1",
     "@provenancekit/sdk": "^0.0.1",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-slot": "^1.2.3",

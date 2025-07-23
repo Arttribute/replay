@@ -26,7 +26,9 @@ export async function POST(req: Request) {
       headers: {
         "Content-Type": `audio/${format}`,
         "Content-Disposition": `inline; filename="speech.${format}"`,
-        "X-Provenance-CID": provenance.cid,
+        ...(provenance && "cid" in provenance
+          ? { "X-Provenance-CID": provenance.cid }
+          : {}),
       },
     });
   } catch (e: any) {

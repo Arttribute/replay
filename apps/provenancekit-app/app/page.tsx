@@ -1,14 +1,25 @@
-// app/page.tsx
+// apps/provenancekit-app/app/page.tsx
 "use client";
+
+import { useState } from "react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+
 import { ResultList } from "@/components/provenance/results-list";
 import { jsonFetch } from "@/lib/fetcher";
+
+/* ---------- tiny helpers ---------- */
+function arrayBufferToBase64(buf: ArrayBuffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buf);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
 
 export default function DemoPage() {
   return (
@@ -47,19 +58,23 @@ export default function DemoPage() {
   );
 }
 
-/* -------------------- Chat -------------------- */
+/* ------------------------------------------------------------------ */
+/*  Chat                                                              */
+/* ------------------------------------------------------------------ */
 function ChatTab() {
   const [input, setInput] = useState(
     "Hello, explain provenance in 1 paragraph."
   );
   const [output, setOutput] = useState<string | null>(null);
   const [cids, setCids] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function run() {
     setLoading(true);
     setOutput(null);
     setCids([]);
+    setError(null);
     try {
       const res = await jsonFetch<{
         completion: any;
@@ -74,9 +89,9 @@ function ChatTab() {
         }),
       });
       setOutput(res.completion.choices[0].message.content);
-      setCids(res.finalOutputCids);
+      setCids(res.finalOutputCids || []);
     } catch (e: any) {
-      setOutput("Error: " + e.message);
+      setError(e.message ?? String(e));
     } finally {
       setLoading(false);
     }
@@ -92,43 +107,54 @@ function ChatTab() {
         <Button onClick={run} disabled={loading}>
           {loading ? "Running…" : "Send"}
         </Button>
+
+        {error && (
+          <div className="text-red-500 text-sm border rounded p-3">{error}</div>
+        )}
+
         {output && (
           <div className="whitespace-pre-wrap border rounded p-3 text-sm">
             {output}
           </div>
         )}
+
         <ResultList cids={cids} />
       </CardContent>
     </Card>
   );
 }
 
-/* -------------------- Image Gen -------------------- */
+/* ------------------------------------------------------------------ */
+/*  Image Generation                                                  */
+/* ------------------------------------------------------------------ */
 function ImageGenTab() {
   const [prompt, setPrompt] = useState("A cute robot painting a canvas");
   const [images, setImages] = useState<string[]>([]);
   const [cids, setCids] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function run() {
     setLoading(true);
     setImages([]);
     setCids([]);
+    setError(null);
     try {
-      const res = await jsonFetch<any>("/api/image/generate", {
+      const res = await jsonFetch<{
+        data: any[];
+        provenance: any[];
+      }>("/api/image/generate", {
         method: "POST",
         body: JSON.stringify({ prompt }),
       });
 
-      const urls: string[] = res.data.map(
-        (d: any) => d.url ?? `data:image/png;base64,${d.b64_json}`
+      const urls = res.data.map((d: any) =>
+        d.url ? d.url : `data:image/png;base64,${d.b64_json}`
       );
       setImages(urls);
-
-      const prov: any[] = res.provenance;
-      setCids(prov.map((p: any) => p.cid));
+      setCids(res.provenance.map((p: any) => p.cid));
     } catch (e: any) {
-      console.error(e);
+      setError(e.message ?? String(e));
     } finally {
       setLoading(false);
     }
@@ -144,8 +170,14 @@ function ImageGenTab() {
         <Button onClick={run} disabled={loading}>
           {loading ? "Generating…" : "Generate"}
         </Button>
+
+        {error && (
+          <div className="text-red-500 text-sm border rounded p-3">{error}</div>
+        )}
+
         <div className="grid grid-cols-3 gap-4">
           {images.map((src, idx) => (
+            // eslint-disable-next-line @next/next/no-img-element
             <img key={idx} src={src} alt="gen" className="rounded border" />
           ))}
         </div>
@@ -155,20 +187,24 @@ function ImageGenTab() {
   );
 }
 
-/* -------------------- Image Edit -------------------- */
+/* ------------------------------------------------------------------ */
+/*  Image Edit                                                        */
+/* ------------------------------------------------------------------ */
 function ImageEditTab() {
   const [prompt, setPrompt] = useState("Add a red hat");
   const [image, setImage] = useState<File | null>(null);
   const [mask, setMask] = useState<File | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [cids, setCids] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function run() {
-    if (!image) return alert("Choose base image");
+    if (!image) return alert("Choose base image first.");
     setLoading(true);
     setImages([]);
     setCids([]);
+    setError(null);
     try {
       const fd = new FormData();
       fd.append("prompt", prompt);
@@ -183,10 +219,9 @@ function ImageEditTab() {
         (d: any) => d.url ?? `data:image/png;base64,${d.b64_json}`
       );
       setImages(urls);
-      const prov: any[] = data.provenance;
-      setCids(prov.map((p: any) => p.cid));
+      setCids(data.provenance.map((p: any) => p.cid));
     } catch (e: any) {
-      console.error(e);
+      setError(e.message ?? String(e));
     } finally {
       setLoading(false);
     }
@@ -217,8 +252,13 @@ function ImageEditTab() {
           {loading ? "Editing…" : "Edit Image"}
         </Button>
 
+        {error && (
+          <div className="text-red-500 text-sm border rounded p-3">{error}</div>
+        )}
+
         <div className="grid grid-cols-3 gap-4">
           {images.map((src, idx) => (
+            // eslint-disable-next-line @next/next/no-img-element
             <img key={idx} src={src} alt="edit" className="rounded border" />
           ))}
         </div>
@@ -228,17 +268,21 @@ function ImageEditTab() {
   );
 }
 
-/* -------------------- TTS -------------------- */
+/* ------------------------------------------------------------------ */
+/*  TTS                                                               */
+/* ------------------------------------------------------------------ */
 function TTSTab() {
   const [text, setText] = useState("Hello world from ProvenanceKit.");
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [cid, setCid] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function run() {
     setLoading(true);
     setAudioUrl(null);
     setCid(null);
+    setError(null);
     try {
       const res = await fetch("/api/tts", {
         method: "POST",
@@ -250,7 +294,7 @@ function TTSTab() {
       setAudioUrl(url);
       setCid(res.headers.get("X-Provenance-CID"));
     } catch (e: any) {
-      console.error(e);
+      setError(e.message ?? String(e));
     } finally {
       setLoading(false);
     }
@@ -266,6 +310,11 @@ function TTSTab() {
         <Button onClick={run} disabled={loading}>
           {loading ? "Synthesizing…" : "Synthesize"}
         </Button>
+
+        {error && (
+          <div className="text-red-500 text-sm border rounded p-3">{error}</div>
+        )}
+
         {audioUrl && <audio controls src={audioUrl} className="mt-3 w-full" />}
         <ResultList cids={cid ? [cid] : []} />
       </CardContent>
@@ -273,11 +322,14 @@ function TTSTab() {
   );
 }
 
-/* -------------------- STT -------------------- */
+/* ------------------------------------------------------------------ */
+/*  STT                                                               */
+/* ------------------------------------------------------------------ */
 function STTTab() {
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState<string | null>(null);
   const [cid, setCid] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function run() {
@@ -285,19 +337,23 @@ function STTTab() {
     setLoading(true);
     setText(null);
     setCid(null);
+    setError(null);
     try {
-      const bytes = await file.arrayBuffer();
-      const base64Audio = Buffer.from(bytes).toString("base64");
+      const buf = await file.arrayBuffer();
+      const base64Audio = arrayBufferToBase64(buf);
 
-      const res = await jsonFetch<any>("/api/stt", {
+      const res = await jsonFetch<{
+        text: string;
+        provenance: { cid: string };
+      }>("/api/stt", {
         method: "POST",
         body: JSON.stringify({ base64Audio, mime: file.type }),
       });
 
       setText(res.text);
-      setCid(res.provenance.cid);
+      setCid(res.provenance?.cid);
     } catch (e: any) {
-      setText("Error: " + e.message);
+      setError(e.message ?? String(e));
     } finally {
       setLoading(false);
     }
@@ -317,6 +373,11 @@ function STTTab() {
         <Button onClick={run} disabled={loading}>
           {loading ? "Transcribing…" : "Transcribe"}
         </Button>
+
+        {error && (
+          <div className="text-red-500 text-sm border rounded p-3">{error}</div>
+        )}
+
         {text && <div className="border rounded p-3 text-sm">{text}</div>}
         <ResultList cids={cid ? [cid] : []} />
       </CardContent>

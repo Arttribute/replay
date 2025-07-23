@@ -1,6 +1,6 @@
 {
   "name": "@provenancekit/openai",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Drop‑in OpenAI client extensions that automatically record provenance in ProvenanceKit.",
   "license": "MIT",
   "main": "./dist/index.js",

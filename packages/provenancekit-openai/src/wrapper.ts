@@ -4,14 +4,12 @@ import type {
   ChatCompletionCreateParams,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
-
 import type {
   Images,
   ImageGenerateParams,
   ImageEditParams,
   ImageCreateVariationParams,
 } from "openai/resources/images";
-
 import type { TranscriptionCreateParams } from "openai/resources/audio/transcriptions";
 import type { SpeechCreateParams } from "openai/resources/audio/speech";
 
@@ -26,7 +24,7 @@ import {
 import { base64ToBytes, fetchBytes, utf8 } from "./utils.js";
 
 /* ------------------------------------------------------------------ */
-/* Types                                                              */
+/* Types                                                               */
 /* ------------------------------------------------------------------ */
 
 type ProvInit = { client: ProvenanceKit } | ProvClientOptions;
@@ -47,13 +45,20 @@ export interface ChatProvReturn {
   finalOutputCids: string[];
 }
 
-/* ------------------------------------------------------------------ */
-/* Wrapper Class                                                      */
+interface SessionOpts {
+  sessionId?: string;
+  linkPreviousOutputs?: boolean; // default true
+  humanEntityId?: string;
+  aiEntityId?: string;
+  toolEntityId?: string;
+}
+
 /* ------------------------------------------------------------------ */
 
 export class OpenAIWithProvenance {
   readonly openai: OpenAI;
   readonly pk: ProvenanceKit;
+  private _toolCache = new Map<string, string>(); // key -> toolCid
 
   constructor(openaiOpts: OpenAIClientOptions, provenance: ProvInit = {}) {
     this.openai = new OpenAI(openaiOpts);
@@ -63,17 +68,22 @@ export class OpenAIWithProvenance {
         : new ProvenanceKit(provenance);
   }
 
-  /* ------------------------------ */
-  /*           INTERNALS            */
-  /* ------------------------------ */
+  /* ───────────────────────── helpers ─────────────────────────── */
 
-  /** Caches tool spec -> CID */
-  private _toolCache = new Map<string, string>();
+  private async recordSessionMsg(
+    sessionId: string | undefined,
+    entityId: string | undefined,
+    payload: any
+  ) {
+    if (!sessionId) return;
+    await this.pk.addSessionMessage(sessionId, payload, entityId);
+  }
 
   private async ensureToolResource(
     name: string,
     spec: unknown,
-    baseProv: Partial<FileOpts>
+    baseProv: Partial<FileOpts>,
+    sessionId?: string
   ): Promise<string> {
     const key = `${name}:${JSON.stringify(spec)}`;
     const cached = this._toolCache.get(key);
@@ -91,124 +101,126 @@ export class OpenAIWithProvenance {
         type: "tool.definition",
         ...baseProv.action,
       },
+
+      sessionId,
     });
 
     this._toolCache.set(key, res.cid);
     return res.cid;
   }
 
-  /** Store a prompt (text) as a resource */
-  private async storePrompt(
-    text: string,
-    baseProv: Partial<FileOpts>
-  ): Promise<FileResult> {
-    return this.pk.file(utf8(text), {
-      ...baseProv,
-      resourceType: "text",
-      entity: {
-        role: baseProv.entity?.role ?? "human",
-        name: baseProv.entity?.name ?? "user",
-        ...baseProv.entity,
-      },
-      action: {
-        type: "prompt.text",
-        ...baseProv.action,
-      },
-    });
-  }
-
-  /** Helper to store arbitrary text output (assistant or tool results) */
   private async storeTextOutput(
     text: string,
-    type: string,
+    actionType: string,
     inputCids: string[],
     toolCid: string | undefined,
     baseProv: Partial<FileOpts>,
-    entityRole: "ai" | "tool" = "ai",
-    entityName?: string
+    sessionId: string | undefined,
+    entityId: string | undefined,
+    entityRoleFallback: "ai" | "tool" = "ai",
+    entityName?: string,
+    extensions?: Record<string, any>
   ): Promise<FileResult> {
     return this.pk.file(utf8(text), {
       ...baseProv,
       resourceType: "text",
       entity: {
-        role: entityRole,
+        id: entityId,
+        role: baseProv.entity?.role ?? entityRoleFallback,
         name: entityName ?? baseProv.entity?.name ?? "openai",
         ...baseProv.entity,
       },
       action: {
-        type,
+        type: actionType,
         inputCids,
         toolCid,
+        extensions,
         ...baseProv.action,
       },
+
+      sessionId,
     });
   }
 
-  /** Helper for binary outputs (image/audio/...) */
   private async storeBinaryOutput(
     bytes: Uint8Array,
     kind: "image" | "audio" | "video",
-    type: string,
+    actionType: string,
     inputCids: string[],
     toolCid: string | undefined,
     baseProv: Partial<FileOpts>,
-    entityName?: string
+    sessionId: string | undefined,
+    entityId: string | undefined,
+    entityName?: string,
+    extensions?: Record<string, any>
   ): Promise<FileResult> {
     return this.pk.file(bytes, {
       ...baseProv,
       resourceType: kind,
       entity: {
-        role: "ai",
+        id: entityId,
+        role: baseProv.entity?.role ?? "ai",
         name: entityName ?? baseProv.entity?.name ?? "openai",
         ...baseProv.entity,
       },
       action: {
-        type,
+        type: actionType,
         inputCids,
         toolCid,
+        extensions,
         ...baseProv.action,
       },
+
+      sessionId,
     });
   }
 
-  /* ================================================================
-   *  CHAT (tool calling included)
-   * ================================================================ */
+  /* ================================================================ */
+  /* CHAT                                                             */
+  /* ================================================================ */
 
   async chatWithProvenance(
     params: ChatCompletionCreateParams,
     runTool: ToolRunner,
-    baseProv: Partial<FileOpts> = {}
+    baseProv: Partial<FileOpts> = {},
+    sessionOpts: SessionOpts = {}
   ): Promise<ChatProvReturn> {
-    // Persist each message separately (better lineage)
-    const inputCids: string[] = [];
-    for (const m of params.messages) {
-      const cidRes = await this.storePrompt(
-        JSON.stringify(m),
-        // message role decides entity role
-        {
-          ...baseProv,
-          entity: {
-            ...baseProv.entity,
-            role: m.role === "user" ? "human" : "ai",
-            name: m.role,
-          },
-          action: { type: `chat.input.${m.role}` },
-        }
-      );
-      inputCids.push(cidRes.cid);
+    const {
+      sessionId,
+      linkPreviousOutputs = true,
+      humanEntityId,
+      aiEntityId,
+      toolEntityId,
+    } = sessionOpts;
+
+    // Persist raw messages into session log ONLY (no prompt resources)
+    if (sessionId) {
+      for (const m of params.messages) {
+        const eid =
+          m.role === "user"
+            ? humanEntityId
+            : m.role === "assistant"
+            ? aiEntityId
+            : m.role === "tool"
+            ? toolEntityId
+            : undefined;
+
+        await this.recordSessionMsg(sessionId, eid, m);
+      }
     }
 
+    const recordedInputCids: string[] = [];
     const actions: ChatProvReturn["actions"] = [];
+
     let messages: ChatCompletionMessageParam[] = [...params.messages];
-    let loop = 0;
     let lastCompletion:
       | Awaited<ReturnType<typeof this.openai.chat.completions.create>>
       | undefined;
+    let loops = 0;
 
     while (true) {
-      loop++;
-      if (loop > 20) throw new Error("Too many tool loops");
+      loops++;
+      if (loops > 20) throw new Error("Too many tool loops");
 
       lastCompletion = await this.openai.chat.completions.create({
         ...params,
@@ -220,16 +232,19 @@ export class OpenAIWithProvenance {
         lastCompletion as import("openai/resources/chat/completions").ChatCompletion;
       const msg = comp.choices[0].message;
 
+      // no tools => final answer
       if (!msg.tool_calls?.length) {
-        // final assistant text
         const outRes = await this.storeTextOutput(
           msg.content ?? "",
           "openai.chat.final",
-          inputCids,
+          recordedInputCids,
           undefined,
           baseProv,
+          sessionId,
+          aiEntityId,
           "ai",
-          params.model ?? "openai"
+          params.model ?? "openai",
+          { messages_meta: { count: params.messages.length } }
         );
 
         actions.push({
@@ -238,6 +253,9 @@ export class OpenAIWithProvenance {
           toolUsedCid: null,
         });
 
+        // also log assistant msg into session
+        await this.recordSessionMsg(sessionId, aiEntityId, msg);
+
         return {
           completion: lastCompletion,
           actions,
@@ -245,48 +263,50 @@ export class OpenAIWithProvenance {
         };
       }
 
-      // has tool calls
+      // There are tool calls
       for (const tc of msg.tool_calls) {
         const toolName = tc.function.name;
         const argsStr = tc.function.arguments ?? "{}";
 
-        // Register tool definition
         const toolSchema = params.tools?.find(
           (t) => t.type === "function" && t.function?.name === toolName
         );
         if (!toolSchema) throw new Error(`Unknown tool: ${toolName}`);
 
+        // record assistant message containing tool_calls
+        await this.recordSessionMsg(sessionId, aiEntityId, msg);
+
         const toolCid = await this.ensureToolResource(
           toolName,
           toolSchema,
-          baseProv
-        );
-
-        // Store arguments text
-        const argsRes = await this.storeTextOutput(
-          argsStr,
-          "openai.tool.call.args",
-          inputCids,
-          toolCid,
           baseProv,
-          "ai",
-          params.model ?? "openai"
+          sessionId
         );
 
-        // Execute tool
-        const result = await runTool(toolName, JSON.parse(argsStr));
+        let argsObj: any;
+        try {
+          argsObj = JSON.parse(argsStr);
+        } catch {
+          argsObj = { raw: argsStr };
+        }
+
+        // execute tool
+        const result = await runTool(toolName, argsObj);
         const resultStr =
           typeof result === "string" ? result : JSON.stringify(result);
 
-        // Store tool result
+        // store tool result as resource
         const resultRes = await this.storeTextOutput(
           resultStr,
           "tool.exec",
-          [argsRes.cid],
+          linkPreviousOutputs ? recordedInputCids : [],
           toolCid,
           baseProv,
+          sessionId,
+          toolEntityId,
           "tool",
-          toolName
+          toolName,
+          { args: argsObj }
         );
 
         actions.push({
@@ -295,62 +315,77 @@ export class OpenAIWithProvenance {
           toolUsedCid: toolCid,
         });
 
-        // feed back to model
-        messages.push(msg);
+        // push tool result back to model
+        messages.push(msg); // original assistant w/ tool_calls
         messages.push({
           role: "tool",
           tool_call_id: tc.id,
           content: resultStr,
         });
 
-        inputCids.push(resultRes.cid);
+        // log tool message into session
+        await this.recordSessionMsg(sessionId, toolEntityId, {
+          role: "tool",
+          tool_call_id: tc.id,
+          content: resultStr,
+        });
+
+        if (linkPreviousOutputs) recordedInputCids.push(resultRes.cid);
       }
     }
   }
 
-  /* ================================================================
-   *  IMAGES
-   * ================================================================ */
+  /* ================================================================ */
+  /* IMAGES                                                           */
+  /* ================================================================ */
 
   async generateImageWithProvenance(
     params: ImageGenerateParams,
-    prov?: Partial<FileOpts>
+    prov: Partial<FileOpts> = {},
+    sessionOpts: SessionOpts = {}
   ): Promise<ImageProv> {
-    // 1. Prompt resource (human provided)
-    const promptRes = await this.storePrompt(params.prompt, {
-      ...prov,
-      entity: { role: "human", name: "user", ...prov?.entity },
-      action: { type: "prompt.text", ...prov?.action },
+    const { sessionId, humanEntityId, aiEntityId } = sessionOpts;
+
+    // Log prompt only
+    await this.recordSessionMsg(sessionId, humanEntityId, {
+      kind: "image.generate.prompt",
+      prompt: params.prompt,
+      model: params.model,
     });
 
-    // 2. Register the tool (DALL·E etc.)
     const toolCid = await this.ensureToolResource(
-      params.model ?? "dalle",
+      params.model ?? "image-gen",
       { kind: "image.generate", model: params.model },
-      prov ?? {}
+      prov,
+      sessionId
     );
 
-    // 3. AI calls image tool
     const out = await this.openai.images.generate(params);
 
     const provResults: (FileResult | { duplicate: DuplicateDetails })[] = [];
-
     for (const d of out.data ?? []) {
-      let bytes: Uint8Array | undefined;
-      if ("b64_json" in d && d.b64_json) bytes = base64ToBytes(d.b64_json);
-      else if ("url" in d && d.url) bytes = await fetchBytes(d.url);
+      const bytes =
+        "b64_json" in d && d.b64_json
+          ? base64ToBytes(d.b64_json)
+          : "url" in d && d.url
+          ? await fetchBytes(d.url)
+          : undefined;
+
       if (!bytes) continue;
 
       const imageRes = await this.storeBinaryOutput(
         bytes,
         "image",
         "openai.image.output",
-        [promptRes.cid],
+        [],
         toolCid,
-        prov ?? {},
-        params.model ?? "openai"
+        prov,
+        sessionId,
+        aiEntityId,
+        params.model ?? "openai",
+        { prompt: params.prompt }
       );
-      console.log("Generated image:", imageRes);
+
       provResults.push(imageRes);
     }
 
@@ -359,39 +394,50 @@ export class OpenAIWithProvenance {
 
   async editImageWithProvenance(
     params: ImageEditParams,
-    prov?: Partial<FileOpts>
+    prov: Partial<FileOpts> = {},
+    sessionOpts: SessionOpts = {}
   ): Promise<ImageProv> {
-    const promptText = params.prompt ?? "(image edit)";
-    const promptRes = await this.storePrompt(promptText, {
-      ...prov,
-      entity: { role: "human", name: "user", ...prov?.entity },
-      action: { type: "prompt.text", ...prov?.action },
+    const { sessionId, humanEntityId, aiEntityId } = sessionOpts;
+
+    await this.recordSessionMsg(sessionId, humanEntityId, {
+      kind: "image.edit.prompt",
+      prompt: params.prompt ?? "",
+      model: params.model,
     });
 
     const toolCid = await this.ensureToolResource(
-      params.model ?? "dalle-edit",
+      params.model ?? "image-edit",
       { kind: "image.edit", model: params.model },
-      prov ?? {}
+      prov,
+      sessionId
     );
 
     const out = await this.openai.images.edit(params);
     const provResults: (FileResult | { duplicate: DuplicateDetails })[] = [];
 
     for (const d of out.data ?? []) {
-      let bytes: Uint8Array | undefined;
-      if ("b64_json" in d && d.b64_json) bytes = base64ToBytes(d.b64_json);
-      else if ("url" in d && d.url) bytes = await fetchBytes(d.url);
+      const bytes =
+        "b64_json" in d && d.b64_json
+          ? base64ToBytes(d.b64_json)
+          : "url" in d && d.url
+          ? await fetchBytes(d.url)
+          : undefined;
+
       if (!bytes) continue;
 
       const imageRes = await this.storeBinaryOutput(
         bytes,
         "image",
         "openai.image.output",
-        [promptRes.cid],
+        [],
         toolCid,
-        prov ?? {},
-        params.model ?? "openai"
+        prov,
+        sessionId,
+        aiEntityId,
+        params.model ?? "openai",
+        { prompt: params.prompt ?? "" }
       );
+
       provResults.push(imageRes);
     }
 
@@ -400,66 +446,77 @@ export class OpenAIWithProvenance {
 
   async createImageVariationWithProvenance(
     params: ImageCreateVariationParams,
-    prov?: Partial<FileOpts>
+    prov: Partial<FileOpts> = {},
+    sessionOpts: SessionOpts = {}
   ): Promise<ImageProv> {
-    const promptRes = await this.storePrompt("(variation)", {
-      ...prov,
-      entity: { role: "human", name: "user", ...prov?.entity },
-      action: { type: "prompt.text", ...prov?.action },
+    const { sessionId, humanEntityId, aiEntityId } = sessionOpts;
+
+    await this.recordSessionMsg(sessionId, humanEntityId, {
+      kind: "image.variation.request",
+      model: params.model,
     });
 
     const toolCid = await this.ensureToolResource(
-      params.model ?? "dalle-var",
+      params.model ?? "image-var",
       { kind: "image.variation", model: params.model },
-      prov ?? {}
+      prov,
+      sessionId
     );
 
     const out = await this.openai.images.createVariation(params);
     const provResults: (FileResult | { duplicate: DuplicateDetails })[] = [];
 
     for (const d of out.data ?? []) {
-      let bytes: Uint8Array | undefined;
-      if ("b64_json" in d && d.b64_json) bytes = base64ToBytes(d.b64_json);
-      else if ("url" in d && d.url) bytes = await fetchBytes(d.url);
+      const bytes =
+        "b64_json" in d && d.b64_json
+          ? base64ToBytes(d.b64_json)
+          : "url" in d && d.url
+          ? await fetchBytes(d.url)
+          : undefined;
+
       if (!bytes) continue;
 
       const imageRes = await this.storeBinaryOutput(
         bytes,
         "image",
         "openai.image.output",
-        [promptRes.cid],
+        [],
         toolCid,
-        prov ?? {},
-        params.model ?? "openai"
+        prov,
+        sessionId,
+        aiEntityId,
+        params.model ?? "openai",
+        { note: "variation" }
       );
+
       provResults.push(imageRes);
     }
 
     return { ...out, provenance: provResults };
   }
 
-  /* ================================================================
-   *  AUDIO (TTS / STT)
-   * ================================================================ */
+  /* ================================================================ */
+  /* AUDIO                                                            */
+  /* ================================================================ */
 
   async ttsWithProvenance(
     params: SpeechCreateParams,
-    prov?: Partial<FileOpts>
-  ): Promise<{
-    response: Response;
-    provenance: FileResult | { duplicate: DuplicateDetails };
-  }> {
-    // prompt text (the input)
-    const promptRes = await this.storePrompt(params.input, {
-      ...prov,
-      entity: { role: "human", name: "user", ...prov?.entity },
-      action: { type: "prompt.text", ...prov?.action },
+    prov: Partial<FileOpts> = {},
+    sessionOpts: SessionOpts = {}
+  ) {
+    const { sessionId, humanEntityId, aiEntityId } = sessionOpts;
+
+    await this.recordSessionMsg(sessionId, humanEntityId, {
+      kind: "tts.prompt",
+      input: params.input,
+      model: params.model,
     });
 
     const toolCid = await this.ensureToolResource(
-      params.model ?? "tts-tool",
+      params.model ?? "tts",
       { kind: "audio.tts", model: params.model },
-      prov ?? {}
+      prov,
+      sessionId
     );
 
     const rsp = await this.openai.audio.speech.create(params);
@@ -469,10 +526,13 @@ export class OpenAIWithProvenance {
       bytes,
       "audio",
       "openai.tts.output",
-      [promptRes.cid],
+      [],
       toolCid,
-      prov ?? {},
-      params.model ?? "openai"
+      prov,
+      sessionId,
+      aiEntityId,
+      params.model ?? "openai",
+      { input: params.input, voice: (params as any).voice }
     );
 
     return { response: rsp, provenance: audioRes };
@@ -480,17 +540,22 @@ export class OpenAIWithProvenance {
 
   async sttWithProvenance(
     params: TranscriptionCreateParams,
-    prov?: Partial<FileOpts>
-  ): Promise<
-    Awaited<ReturnType<OpenAI["audio"]["transcriptions"]["create"]>> & {
-      provenance: FileResult | { duplicate: DuplicateDetails };
-    }
-  > {
-    // Tool spec
+    prov: Partial<FileOpts> = {},
+    sessionOpts: SessionOpts = {}
+  ) {
+    const { sessionId, humanEntityId, aiEntityId } = sessionOpts;
+
+    await this.recordSessionMsg(sessionId, humanEntityId, {
+      kind: "stt.upload",
+      fileName: (params.file as any)?.name,
+      model: params.model,
+    });
+
     const toolCid = await this.ensureToolResource(
       params.model ?? "whisper",
       { kind: "audio.stt", model: params.model },
-      prov ?? {}
+      prov,
+      sessionId
     );
 
     const rsp = await this.openai.audio.transcriptions.create({
@@ -498,15 +563,17 @@ export class OpenAIWithProvenance {
       stream: false,
     });
 
-    // Store text result
     const textRes = await this.storeTextOutput(
       rsp.text,
       "openai.stt.output",
-      [], // could include original audio cid if you stored it first
+      [],
       toolCid,
-      prov ?? {},
+      prov,
+      sessionId,
+      aiEntityId,
       "ai",
-      params.model ?? "openai"
+      params.model ?? "openai",
+      { language: (params as any).language ?? "auto" }
     );
 
     return { ...rsp, provenance: textRes };

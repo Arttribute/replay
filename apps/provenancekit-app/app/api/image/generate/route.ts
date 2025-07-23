@@ -1,7 +1,9 @@
 // app/api/image/generate/route.ts
+// app/api/image/generate/route.ts
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { openaiProv } from "@/lib/provenance";
+import { openaiProv, DEMO_HUMAN_ID, DEMO_AI_ID } from "@/lib/provenance";
+
 export const revalidate = 0;
 
 const BodySchema = z.object({
@@ -20,11 +22,14 @@ const BodySchema = z.object({
     ])
     .default("1024x1024"),
   n: z.number().default(1),
+  sessionId: z.string().uuid().optional(),
 });
 
 export async function POST(req: Request) {
   try {
-    const { prompt, model, size, n } = BodySchema.parse(await req.json());
+    const { prompt, model, size, n, sessionId } = BodySchema.parse(
+      await req.json()
+    );
 
     const out = await openaiProv.generateImageWithProvenance(
       { model, prompt, n, size },
@@ -36,10 +41,9 @@ export async function POST(req: Request) {
         },
         action: { type: "ext:generate_image" },
       }
+      //{ sessionId, humanEntityId: DEMO_HUMAN_ID, aiEntityId: DEMO_AI_ID }
     );
 
-    // Return urls/base64 from OpenAI plus provenance
-    console.log("Generated images:", out);
     return NextResponse.json(out);
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

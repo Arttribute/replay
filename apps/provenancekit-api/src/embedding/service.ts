@@ -8,11 +8,12 @@ export class EmbeddingService {
   constructor(private p = new XenovaUniversalProvider()) {}
 
   async vector(
-    kind: "text" | "image" | "audio" | "video",
+    kind: "text" | "image" | "audio" | "video" | "tool",
     dataUriOrUrl: string
   ) {
     switch (kind) {
       case "text":
+      case "tool": // 👈 tools are just JSON/text, embed as text
         return this.p.encodeText(dataUriOrUrl);
       case "image":
         return this.p.encodeImage(dataUriOrUrl);
@@ -28,6 +29,7 @@ export class EmbeddingService {
       .update(resource)
       .set({ embedding: vec })
       .where(sql`cid = ${cid}`);
+    console.log("Stored embedding for CID:", cid);
   }
 
   /** Cosine-similarity search */
@@ -54,7 +56,10 @@ export class EmbeddingService {
     opts: { topK?: number; minScore?: number; type?: string } = {}
   ) {
     const { topK = 5, minScore = 0, type } = opts;
-
+    //handele empty vector
+    if (!vec || !vec.length) {
+      return [];
+    }
     /* (1) stringify -> '[0.12,-0.34,…]' */
     const lit = vecLiteral(vec);
 

@@ -45,3 +45,26 @@ export interface ProvenanceGraph {
   nodes: GraphNode[];
   edges: GraphEdge[];
 }
+
+export interface Session {
+  sessionId: string;
+  title?: string | null;
+  metadata?: any;
+  startedAt: string;
+  endedAt?: string | null;
+}
+
+export interface SessionMessage {
+  messageId: string;
+  sessionId: string;
+  entityId?: string | null;
+  content: any;
+  createdAt: string;
+}
+
+export interface SessionBundle {
+  session: Session;
+  messages: SessionMessage[];
+  actions: any[];
+  resources: any[];
+}

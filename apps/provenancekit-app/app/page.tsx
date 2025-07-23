@@ -69,6 +69,7 @@ function ChatTab() {
   const [cids, setCids] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   async function run() {
     setLoading(true);
@@ -79,15 +80,18 @@ function ChatTab() {
       const res = await jsonFetch<{
         completion: any;
         finalOutputCids: string[];
+        sessionId: string;
       }>("/api/chat", {
         method: "POST",
         body: JSON.stringify({
+          sessionId, // keep in component state if you want
           messages: [
             { role: "system", content: "You are helpful." },
             { role: "user", content: input },
           ],
         }),
       });
+      setSessionId(res.sessionId);
       setOutput(res.completion.choices[0].message.content);
       setCids(res.finalOutputCids || []);
     } catch (e: any) {

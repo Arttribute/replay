@@ -1,3 +1,4 @@
+// packages/provenancekit-sdk/src/client.ts
 import { Api, ApiClientOptions } from "./api";
 import { ProvenanceKitError } from "./errors";
 import type {
@@ -7,6 +8,7 @@ import type {
   ProvenanceGraph,
   Match,
 } from "./types";
+import { Session, SessionBundle } from "./types";
 
 function asBlob(input: Blob | File | Buffer | Uint8Array): Blob {
   if (input instanceof Blob) return input;
@@ -32,6 +34,7 @@ export interface FileOpts {
     extensions?: Record<string, any>;
   };
   resourceType?: string;
+  sessionId?: string; // NEW
 }
 
 export interface UploadOptions {
@@ -40,7 +43,6 @@ export interface UploadOptions {
   min?: number;
 }
 
-/* -------- return structs -------- */
 export interface FileResult {
   cid: string;
   actionId?: string;
@@ -57,7 +59,6 @@ export class ProvenanceKit {
     this.api = new Api(opts);
   }
 
-  /* tiny helpers -------------------------------------------------- */
   private form(file: Blob | File | Buffer | Uint8Array, json: unknown) {
     const f = new FormData();
     f.append("file", asBlob(file), (file as any).name ?? "file.bin");
@@ -65,7 +66,6 @@ export class ProvenanceKit {
     return f;
   }
 
-  /* 1️⃣  low‑level upload&match (no db write) -------------------- */
   uploadAndMatch(
     file: Blob | File | Buffer | Uint8Array,
     o: UploadOptions = {}
@@ -78,7 +78,6 @@ export class ProvenanceKit {
     return this.api.postForm<UploadMatchResult>(`/search/file?${qs}`, form);
   }
 
-  /* 2️⃣  high‑level file() — the dev‑facing one ----------------- */
   async file(
     file: Blob | File | Buffer | Uint8Array,
     opts: FileOpts,
@@ -90,7 +89,7 @@ export class ProvenanceKit {
         actionId: string;
         entityId: string;
       }>("/activity", this.form(file, opts));
-      return { ...res }; // brand‑new resource
+      return { ...res };
     } catch (e) {
       if (e instanceof ProvenanceKitError && e.code === "Duplicate") {
         const d = e.details as DuplicateDetails;
@@ -104,20 +103,22 @@ export class ProvenanceKit {
           },
         };
       }
-      throw e; // bubble the rest
+      throw e;
     }
   }
 
-  /* 3️⃣  tool registration (dedup handled by .file) -------------- */
-  async tool(spec: Blob | File | Buffer | Uint8Array, meta: { name?: string }) {
+  async tool(
+    spec: Blob | File | Buffer | Uint8Array,
+    meta: { name?: string; sessionId?: string }
+  ) {
     const res = await this.file(spec, {
       entity: { role: "organization", name: meta.name ?? "Tool Publisher" },
       resourceType: "tool",
+      sessionId: meta.sessionId,
     });
     return res.cid;
   }
 
-  /* 4️⃣  provenance helpers -------------------------------------- */
   provenance(cid: string, depth = 10) {
     return this.api.get<ProvenanceBundle>(`/provenance/${cid}?depth=${depth}`);
   }
@@ -125,13 +126,41 @@ export class ProvenanceKit {
     return this.api.get<ProvenanceGraph>(`/graph/${cid}?depth=${depth}`);
   }
 
-  /* 5️⃣  entity helper ------------------------------------------- */
-  entity(e: {
+  async entity(e: {
     role: string;
     name?: string;
     wallet?: string;
     publicKey?: string;
   }) {
-    return this.api.postJSON<{ id: string }>("/entity", e).then((r) => r.id);
+    const r = await this.api.postJSON<{ id: string }>("/entity", e);
+    return r.id;
+  }
+
+  /* -------- NEW: sessions ---------- */
+  async createSession(title?: string, metadata?: any) {
+    const r = await this.api.postJSON<{ id: string }>("/session", {
+      title,
+      metadata,
+    });
+    return r.id;
+  }
+
+  closeSession(id: string) {
+    return this.api.postJSON<{ ok: true }>(`/session/${id}/close`, {});
+  }
+
+  async addSessionMessage(sessionId: string, content: any, entityId?: string) {
+    const r = await this.api.postJSON<{ messageId: string }>(
+      `/session/${sessionId}/message`,
+      {
+        content,
+        entityId,
+      }
+    );
+    return r.messageId;
+  }
+
+  getSession(id: string) {
+    return this.api.get<SessionBundle>(`/session/${id}`);
   }
 }

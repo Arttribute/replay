@@ -1,3 +1,4 @@
+// apps/provenancekit-api/db/schema.ts
 import {
   pgTable,
   text,
@@ -5,9 +6,39 @@ import {
   jsonb,
   integer,
   boolean,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { vector } from "drizzle-orm/pg-core";
+
+/* ───────── NEW: session tables ───────── */
+export const session = pgTable("session", {
+  sessionId: uuid("session_id")
+    .primaryKey()
+    .default(sql`uuid_generate_v4()`),
+  title: text("title"),
+  metadata: jsonb("metadata"),
+  startedAt: timestamp("started_at", { withTimezone: true })
+    .notNull()
+    .default(sql`timezone('utc', now())`),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+});
+
+export const sessionMessage = pgTable("session_message", {
+  messageId: uuid("message_id")
+    .primaryKey()
+    .default(sql`uuid_generate_v4()`),
+  sessionId: uuid("session_id")
+    .notNull()
+    .references(() => session.sessionId),
+  entityId: text("entity_id").references(() => entity.entityId), // NEW
+  content: jsonb("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .default(sql`timezone('utc', now())`),
+});
+
+/* ───────── EXISTING tables (unchanged names) ───────── */
 
 export const entity = pgTable("entity", {
   entityId: text("entity_id")
@@ -37,6 +68,7 @@ export const resource = pgTable("resource", {
   license: text("license"),
   embedding: vector("embedding", { dimensions: 768 }),
   extensions: jsonb("extensions"),
+  sessionId: uuid("session_id").references(() => session.sessionId),
 });
 
 export const action = pgTable("action", {
@@ -51,6 +83,7 @@ export const action = pgTable("action", {
   toolUsed: text("tool_used"),
   proof: text("proof"),
   extensions: jsonb("extensions"),
+  sessionId: uuid("session_id").references(() => session.sessionId),
 });
 
 export const attribution = pgTable("attribution", {

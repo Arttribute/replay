@@ -1,43 +1,20 @@
 // app/api/chat/route.ts
-import { NextResponse } from "next/server";
 import { z } from "zod";
-import { openaiProv } from "@/lib/provenance";
-
-export const revalidate = 0;
-export const maxDuration = 60;
+import { NextResponse } from "next/server";
+import { openaiProv, pk } from "@/lib/provenance";
 
 const BodySchema = z.object({
-  messages: z.array(
-    z.discriminatedUnion("role", [
-      z.object({
-        role: z.literal("system"),
-        content: z.string(),
-      }),
-      z.object({
-        role: z.literal("user"),
-        content: z.string(),
-        name: z.string().optional(),
-      }),
-      z.object({
-        role: z.literal("assistant"),
-        content: z.string(),
-        name: z.string().optional(),
-        tool_call_id: z.string().optional(),
-      }),
-      z.object({
-        role: z.literal("tool"),
-        content: z.string(),
-        tool_call_id: z.string(),
-      }),
-    ])
-  ),
+  sessionId: z.string().uuid().optional().nullable(), // ← allow null
+  messages: z.array(z.any()),
   model: z.string().default("gpt-4.1-mini"),
 });
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { messages, model } = BodySchema.parse(body);
+    const { messages, model, sessionId } = BodySchema.parse(body);
+
+    const sid = sessionId ?? (await pk.createSession("Chat Demo"));
 
     const { completion, actions, finalOutputCids } =
       await openaiProv.chatWithProvenance(
@@ -45,12 +22,16 @@ export async function POST(req: Request) {
         async () => {
           throw new Error("No tools in this demo");
         },
-        {
-          entity: { role: "human" },
-        }
+        { entity: { role: "human" } },
+        { sessionId: sid }
       );
 
-    return NextResponse.json({ completion, actions, finalOutputCids });
+    return NextResponse.json({
+      completion,
+      actions,
+      finalOutputCids,
+      sessionId: sid,
+    });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

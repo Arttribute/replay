@@ -1,5 +1,5 @@
 /* Re‑export the canonical bundle / entity / resource types */
-export * from "@arttribute/eaa-types";
+export type { Entity, Resource, Action } from "@arttribute/eaa-types";
 
 /*───────────────────────────────────────────────────────────*\
  | 1.  Duplicate‑handling helper                              |

@@ -4,7 +4,6 @@ import { ProvenanceKitError } from "./errors";
 import type {
   UploadMatchResult,
   DuplicateDetails,
-  ProvenanceBundle,
   ProvenanceGraph,
   Match,
 } from "./types";
@@ -119,9 +118,6 @@ export class ProvenanceKit {
     return res.cid;
   }
 
-  provenance(cid: string, depth = 10) {
-    return this.api.get<ProvenanceBundle>(`/provenance/${cid}?depth=${depth}`);
-  }
   graph(cid: string, depth = 10) {
     return this.api.get<ProvenanceGraph>(`/graph/${cid}?depth=${depth}`);
   }

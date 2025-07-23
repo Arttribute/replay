@@ -16,8 +16,8 @@
   },
   "packageManager": "pnpm@10.12.1",
   "dependencies": {
-    "@provenancekit/openai": "^0.0.2",
-    "@provenancekit/sdk": "^0.0.2",
+    "@provenancekit/openai": "^0.0.3",
+    "@provenancekit/sdk": "^0.0.3",
     "@arttribute/eaa-types": "^0.0.1"
   }
 }

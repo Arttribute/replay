@@ -44,6 +44,7 @@ export async function addSessionMessage(opts: {
   await assertSessionOpen(opts.sessionId);
 
   const id = uuidv4();
+  console.log(`Adding message ${id} to session ${opts.sessionId}`);
   await db.insert(sessionMessage).values({
     messageId: id,
     sessionId: opts.sessionId,
